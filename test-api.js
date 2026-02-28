@@ -1,29 +1,13 @@
-import { NextResponse } from 'next/server';
-import Groq from 'groq-sdk';
+const Groq = require('groq-sdk');
+require('dotenv').config({ path: '.env.local' });
 
-const getGroqKey = () => {
-    const keys = [
-        process.env.GROQ_API_KEY,
-        process.env.GROQ_API_KEY_SECURITY,
-        process.env.GROQ_API_KEY_PERFORMANCE,
-        process.env.GROQ_API_KEY_UX
-    ].filter(Boolean);
-    return keys[Math.floor(Math.random() * keys.length)];
-};
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-export async function POST(req: Request) {
-    const groq = new Groq({
-        apiKey: getGroqKey() || process.env.GROQ_API_KEY,
-    });
+async function test() {
+    console.log("Starting test...");
+    const prompt = `You are a chaotic senior software architect generating a "Broken Code Escape Room" to train a junior developer.
 
-    try {
-        const body = await req.json();
-        const skills = body.skills || [];
-        const userSkills = Array.isArray(skills) && skills.length > 0 ? skills.join(', ') : 'React, JavaScript';
-
-        const prompt = `You are a chaotic senior software architect generating a "Broken Code Escape Room" to train a junior developer.
-
-User's Training Focus: ${userSkills}
+User's Training Focus: React, JavaScript
 
 Generate ONE highly realistic, incredibly messy file of code (e.g., a React component, a Python script, or an API route based on their skills).
 
@@ -45,35 +29,34 @@ Return ONLY a valid JSON object matching this exact structure:
   ]
 }`;
 
+    try {
         const completion = await groq.chat.completions.create({
             messages: [
                 { role: 'system', content: 'You generate JSON objects for coding challenges. Return strict JSON.' },
                 { role: 'user', content: prompt }
             ],
-            model: 'llama-3.1-8b-instant',
+            model: 'mixtral-8x7b-32768',
             response_format: { type: 'json_object' },
             temperature: 0.8,
         });
 
         let output = completion.choices[0]?.message?.content || '{}';
-        // Clean up markdown ticks if Llama still includes them despite JSON mode
+        console.log("=== RAW OUTPUT START ===");
+        console.log(output);
+        console.log("=== RAW OUTPUT END ===");
+
         output = output.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 
-        let projectData;
         try {
-            projectData = JSON.parse(output);
-        } catch (parseError) {
-            console.error("Failed to parse JSON. Raw output was:", output);
-            throw new Error("AI returned malformed JSON that could not be parsed.");
+            const data = JSON.parse(output);
+            console.log("Parse successful. Keys:", Object.keys(data));
+        } catch (e) {
+            console.error("JSON PARSE ERROR:", e.message);
         }
 
-        if (!projectData.initialCode || !projectData.missions) {
-            throw new Error("Invalid format returned from AI.");
-        }
-
-        return NextResponse.json(projectData);
-    } catch (error: unknown) {
-        console.error('Groq Chaos Engine Error:', error);
-        return NextResponse.json({ error: (error instanceof Error ? error.message : String(error)) }, { status: 500 });
+    } catch (e) {
+        console.error("GROQ API ERROR:", e);
     }
 }
+
+test();

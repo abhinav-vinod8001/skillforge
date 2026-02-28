@@ -50,17 +50,17 @@ export async function POST(request: Request) {
         const [securityRes, staffRes, uxRes] = await Promise.all([
             groqSecurity.chat.completions.create({
                 messages: [{ role: 'system', content: securityPrompt }, { role: 'user', content: code }],
-                model: 'llama-3.3-70b-versatile',
+                model: 'llama-3.1-8b-instant',
                 response_format: { type: 'json_object' },
             }),
             groqPerformance.chat.completions.create({
                 messages: [{ role: 'system', content: staffPrompt }, { role: 'user', content: code }],
-                model: 'llama-3.3-70b-versatile',
+                model: 'llama-3.1-8b-instant',
                 response_format: { type: 'json_object' },
             }),
             groqUX.chat.completions.create({
                 messages: [{ role: 'system', content: uxPrompt }, { role: 'user', content: code }],
-                model: 'llama-3.3-70b-versatile',
+                model: 'llama-3.1-8b-instant',
                 response_format: { type: 'json_object' },
             })
         ]);
