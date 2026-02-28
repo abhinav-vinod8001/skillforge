@@ -28,4 +28,13 @@ export default defineSchema({
         logData: v.string(), // JSON stringified log
         completedAt: v.string(),
     }).index("by_userId", ["userId"]),
+
+    leaderboard_scores: defineTable({
+        userId: v.string(),
+        userName: v.string(),
+        totalPoints: v.number(),
+        challengesDone: v.number(),
+        forgeLevel: v.number(),
+        topBadge: v.string(),
+    }).index("by_userId", ["userId"]),
 });

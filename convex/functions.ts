@@ -154,3 +154,41 @@ export const saveSimulatorLog = mutation({
         }
     },
 });
+
+// ─── LEADERBOARD ────────────────────────────────────────────────────────
+
+export const saveLeaderboardScore = mutation({
+    args: {
+        userId: v.string(),
+        userName: v.string(),
+        totalPoints: v.number(),
+        challengesDone: v.number(),
+        forgeLevel: v.number(),
+        topBadge: v.string(),
+    },
+    handler: async (ctx, args) => {
+        const existing = await ctx.db
+            .query("leaderboard_scores")
+            .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+            .first();
+        if (existing) {
+            await ctx.db.patch(existing._id, {
+                userName: args.userName,
+                totalPoints: args.totalPoints,
+                challengesDone: args.challengesDone,
+                forgeLevel: args.forgeLevel,
+                topBadge: args.topBadge,
+            });
+        } else {
+            await ctx.db.insert("leaderboard_scores", args);
+        }
+    },
+});
+
+export const getAllLeaderboardScores = query({
+    args: {},
+    handler: async (ctx) => {
+        return await ctx.db.query("leaderboard_scores").collect();
+    },
+});
+

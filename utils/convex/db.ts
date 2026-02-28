@@ -114,6 +114,7 @@ export async function saveProgress(forgeLevel: number, promptProgress: Record<st
             userId, forgeLevel, promptProgress: JSON.stringify(promptProgress),
         });
     } catch (e) { console.warn('Convex saveProgress failed:', e); }
+    syncLeaderboard();
 }
 
 export async function getProgress(): Promise<{ forgeLevel: number; promptProgress: Record<string, unknown> }> {
@@ -157,6 +158,7 @@ export async function saveForgeLevel(level: number): Promise<void> {
             userId, forgeLevel: level, promptProgress: JSON.stringify(promptProgress),
         });
     } catch (e) { console.warn('Convex saveForgeLevel failed:', e); }
+    syncLeaderboard();
 }
 
 export async function savePromptProgress(promptProgress: Record<string, unknown>): Promise<void> {
@@ -170,6 +172,7 @@ export async function savePromptProgress(promptProgress: Record<string, unknown>
             userId, forgeLevel, promptProgress: JSON.stringify(promptProgress),
         });
     } catch (e) { console.warn('Convex savePromptProgress failed:', e); }
+    syncLeaderboard();
 }
 
 // ─── BADGES ─────────────────────────────────────────────────────────────
@@ -184,6 +187,7 @@ export async function saveBadges(badges: string[]): Promise<void> {
             userId, badges: JSON.stringify(badges),
         });
     } catch (e) { console.warn('Convex saveBadges failed:', e); }
+    syncLeaderboard();
 }
 
 export async function getBadges(): Promise<string[]> {
@@ -239,3 +243,92 @@ export async function getSimulatorLog(): Promise<Record<string, unknown> | null>
     } catch { /* ignore */ }
     return null;
 }
+
+// ─── LEADERBOARD ────────────────────────────────────────────────────────
+
+function getUserName(): string {
+    try {
+        const user = localStorage.getItem('praxis_user');
+        if (user) return JSON.parse(user).name || 'User';
+    } catch { /* ignore */ }
+    return 'User';
+}
+
+function getTopBadge(badges: string[]): string {
+    if (badges.includes('prompt-master')) return '🏆 Prompt Master';
+    if (badges.includes('prompt-engineer')) return '⚙️ Prompt Engineer';
+    if (badges.includes('prompt-apprentice')) return '📝 Apprentice';
+    if (badges.includes('forge-veteran')) return '🔥 Forge Veteran';
+    if (badges.includes('forge-starter')) return '⚡ Forge Starter';
+    if (badges.includes('first-attempt')) return '🎯 First Attempt';
+    return '—';
+}
+
+export async function syncLeaderboard(): Promise<void> {
+    const client = getClient();
+    const userId = getUserId();
+    if (!client || !userId) return;
+
+    try {
+        // Compute total points from all sources
+        const forgeLevel = parseInt(localStorage.getItem('skillforge_forge_level') || '0', 10);
+        let promptProgress: Record<string, any> = {};
+        try {
+            const saved = localStorage.getItem('skillforge_prompt_progress');
+            if (saved) promptProgress = JSON.parse(saved);
+        } catch { /* ignore */ }
+
+        let badges: string[] = [];
+        try {
+            const saved = localStorage.getItem('skillforge_prompt_badges');
+            if (saved) badges = JSON.parse(saved);
+        } catch { /* ignore */ }
+
+        let totalPoints = forgeLevel * 50;
+        let challengesDone = 0;
+        for (const key of Object.keys(promptProgress)) {
+            const p = promptProgress[key] as { bestScore?: number; completed?: boolean };
+            totalPoints += p.bestScore || 0;
+            if (p.completed) challengesDone++;
+        }
+        totalPoints += badges.length * 25;
+
+        await client.mutation(api.functions.saveLeaderboardScore, {
+            userId,
+            userName: getUserName(),
+            totalPoints,
+            challengesDone,
+            forgeLevel,
+            topBadge: getTopBadge(badges),
+        });
+    } catch (e) { console.warn('Convex syncLeaderboard failed:', e); }
+}
+
+export interface LeaderboardEntry {
+    userId: string;
+    userName: string;
+    totalPoints: number;
+    challengesDone: number;
+    forgeLevel: number;
+    topBadge: string;
+}
+
+export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
+    const client = getClient();
+    if (!client) return [];
+    try {
+        const docs = await client.query(api.functions.getAllLeaderboardScores, {});
+        return docs.map((d: any) => ({
+            userId: d.userId,
+            userName: d.userName,
+            totalPoints: d.totalPoints,
+            challengesDone: d.challengesDone,
+            forgeLevel: d.forgeLevel,
+            topBadge: d.topBadge,
+        }));
+    } catch (e) {
+        console.warn('Convex getLeaderboard failed:', e);
+        return [];
+    }
+}
+
