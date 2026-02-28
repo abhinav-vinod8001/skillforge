@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { UploadCloud, FileText, Loader2, CheckCircle2 } from 'lucide-react';
+import { UploadCloud, Rocket, Loader2, CheckCircle2, Target, Code, Brain } from 'lucide-react';
 import * as pdfjsLibTypes from 'pdfjs-dist';
 import { saveSkills } from '@/utils/convex/db';
 import styles from './onboarding.module.css';
@@ -18,8 +18,11 @@ if (typeof window !== 'undefined') {
 }
 
 export default function OnboardingPage() {
+    const [ambition, setAmbition] = useState('');
+    const [currentTech, setCurrentTech] = useState('');
+    const [targetSkills, setTargetSkills] = useState('');
+
     const [file, setFile] = useState<File | null>(null);
-    const [textInput, setTextInput] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [result, setResult] = useState<{ skills: string[] } | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -53,35 +56,37 @@ export default function OnboardingPage() {
         setError(null);
 
         try {
-            let syllabusText = textInput;
+            let combinedInput = `My Ambition: ${ambition}\nMy Current Knowledge: ${currentTech}\nMy Target Learning Goals: ${targetSkills}`;
 
             if (file) {
                 if (file.type === 'application/pdf') {
-                    syllabusText = await parsePDF(file);
+                    const pdfText = await parsePDF(file);
+                    combinedInput += `\n\nReference Material/Syllabus: ${pdfText}`;
                 } else {
-                    syllabusText = await file.text();
+                    const fileText = await file.text();
+                    combinedInput += `\n\nReference Material/Syllabus: ${fileText}`;
                 }
             }
 
-            if (!syllabusText.trim()) {
-                throw new Error("Please upload a file or paste your syllabus text.");
+            if (!ambition.trim() && !targetSkills.trim() && !file) {
+                throw new Error("Please tell us your ambition, target skills, or upload a syllabus to proceed.");
             }
 
             // Call our API to extract skills via Groq
             const res = await fetch('/api/analyze-syllabus', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: syllabusText.substring(0, 15000) }) // limit size
+                body: JSON.stringify({ text: combinedInput.substring(0, 15000) }) // limit size
             });
 
             if (!res.ok) {
                 const errData = await res.json().catch(() => ({}));
-                throw new Error(errData.error || "Failed to analyze syllabus");
+                throw new Error(errData.error || "Failed to analyze profile");
             }
 
             const data = await res.json();
 
-            // Save to Appwrite Database (with localStorage fallback)
+            // Save to Convex/localStorage
             await saveSkills(data.skills);
 
             setResult(data);
@@ -95,10 +100,10 @@ export default function OnboardingPage() {
     if (result) {
         return (
             <div className={`animate-fade-in ${styles.container}`}>
-                <div className="glass-panel" style={{ padding: '3rem', textAlign: 'center' }}>
-                    <CheckCircle2 size={64} className="text-gradient" style={{ margin: '0 auto 1.5rem', display: 'block' }} />
-                    <h1 className={styles.title}>Syllabus Analyzed</h1>
-                    <p className={styles.subtitle}>We&apos;ve extracted the core skills from your curriculum.</p>
+                <div className="glass-panel" style={{ padding: '4rem 2rem', textAlign: 'center' }}>
+                    <CheckCircle2 size={72} className="text-gradient" style={{ margin: '0 auto 1.5rem', display: 'block' }} />
+                    <h1 className={styles.title} style={{ fontSize: '2.5rem' }}>Profile Analyzed</h1>
+                    <p className={styles.subtitle}>We've extracted the exact prerequisites required for your ambition.</p>
 
                     <div className={styles.skillsGrid}>
                         {Array.isArray(result.skills) && result.skills.length > 0 ? (
@@ -106,13 +111,16 @@ export default function OnboardingPage() {
                                 <span key={i} className={styles.skillTag}>{skill}</span>
                             ))
                         ) : (
-                            <p style={{ color: 'var(--text-secondary)', gridColumn: '1/-1' }}>No specific skills were extracted. Try again with more detailed text.</p>
+                            <p style={{ color: 'var(--text-secondary)', gridColumn: '1/-1' }}>No specific technical skills were extracted. Try again with more detailed tech stacks.</p>
                         )}
                     </div>
 
-                    <button onClick={() => router.push('/dashboard/assessment')} className="btn-primary" style={{ marginTop: '2rem' }}>
-                        Take Skill Assessment <UploadCloud size={18} />
+                    <button onClick={() => router.push('/dashboard/assessment')} className="btn-primary" style={{ marginTop: '3rem', padding: '1rem 2rem', fontSize: '1.1rem' }}>
+                        Advance to Skill Scanner <Rocket size={20} style={{ marginLeft: '0.5rem' }} />
                     </button>
+                    <p style={{ marginTop: '1rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                        You must pass the Tribunal's prerequisite theoretical test to proceed.
+                    </p>
                 </div>
             </div>
         );
@@ -121,12 +129,59 @@ export default function OnboardingPage() {
     return (
         <div className={`animate-fade-in ${styles.container}`}>
             <div className={styles.header}>
-                <h1 className={styles.title}>Upload Your Curriculum</h1>
-                <p className={styles.subtitle}>Drag and drop your syllabus or paste key topics to identify gaps against real market demand.</p>
+                <h1 className={styles.title}>Get Started</h1>
+                <p className={styles.subtitle}>Tell us your grand ambition. We will dynamically adapt the entire platform's curriculum and incident simulations to match your trajectory.</p>
             </div>
 
             <form onSubmit={handleSubmit} className={styles.formContent}>
-                <div className={`glass-panel ${styles.uploadZone}`}>
+
+                <div className={styles.inputGroup}>
+                    <label className={styles.inputLabel} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Target size={18} className="text-gradient" /> My Ambition
+                    </label>
+                    <p className={styles.inputSublabel}>What is your ultimate goal? (e.g., Get a job as a Senior Frontend React Developer at an AI Startup)</p>
+                    <textarea
+                        className={styles.textarea}
+                        value={ambition}
+                        onChange={(e) => setAmbition(e.target.value)}
+                        placeholder="I want to..."
+                        rows={3}
+                        required
+                    />
+                </div>
+
+                <div className={styles.inputGroup}>
+                    <label className={styles.inputLabel} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Brain size={18} color="#d2a8ff" /> Current Intelligence
+                    </label>
+                    <p className={styles.inputSublabel}>What technologies, languages, or concepts do you already know?</p>
+                    <input
+                        type="text"
+                        className={styles.input}
+                        value={currentTech}
+                        onChange={(e) => setCurrentTech(e.target.value)}
+                        placeholder="e.g., HTML, CSS, Basic JavaScript, Python"
+                    />
+                </div>
+
+                <div className={styles.inputGroup}>
+                    <label className={styles.inputLabel} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Code size={18} color="#58a6ff" /> Target Upgrades
+                    </label>
+                    <p className={styles.inputSublabel}>What exactly do you want to master next on this platform?</p>
+                    <input
+                        type="text"
+                        className={styles.input}
+                        value={targetSkills}
+                        onChange={(e) => setTargetSkills(e.target.value)}
+                        placeholder="e.g., Next.js 15, Turbopack, Vector Databases"
+                        required
+                    />
+                </div>
+
+                <div className={styles.divider}>OPTIONAL: SYLLABUS / RESUME INGESTION</div>
+
+                <div className={styles.uploadZone}>
                     <input
                         type="file"
                         id="syllabus-upload"
@@ -135,23 +190,10 @@ export default function OnboardingPage() {
                         onChange={handleFileUpload}
                     />
                     <label htmlFor="syllabus-upload" className={styles.uploadLabel}>
-                        <UploadCloud size={48} className="text-gradient" />
-                        <h3>{file ? file.name : 'Choose a file or drag it here'}</h3>
+                        <UploadCloud size={32} className="text-gradient" />
+                        <h3>{file ? file.name : 'Upload existing curriculum or syllabus'}</h3>
                         <p>PDF or TXT up to 10MB</p>
                     </label>
-                </div>
-
-                <div className={styles.divider}>OR</div>
-
-                <div className={styles.textInputWrapper}>
-                    <label className={styles.inputLabel}>Paste key topics</label>
-                    <textarea
-                        className={styles.textarea}
-                        value={textInput}
-                        onChange={(e) => setTextInput(e.target.value)}
-                        placeholder='e.g., "C++, basic data structures, operating systems, networking..."'
-                        rows={5}
-                    />
                 </div>
 
                 {error && <div className={styles.error}>{error}</div>}
@@ -159,13 +201,13 @@ export default function OnboardingPage() {
                 <button
                     type="submit"
                     className="btn-primary"
-                    disabled={isProcessing || (!file && !textInput)}
-                    style={{ width: '100%', marginTop: '1rem', padding: '1rem' }}
+                    disabled={isProcessing}
+                    style={{ width: '100%', marginTop: '1rem', padding: '1rem', fontSize: '1.1rem' }}
                 >
                     {isProcessing ? (
-                        <><Loader2 className="animate-spin" size={20} /> Analyzing Curriculum...</>
+                        <><Loader2 className="animate-spin" size={20} style={{ marginRight: '0.5rem' }} /> Processing Profile Data...</>
                     ) : (
-                        <><FileText size={20} /> Analyze Syllabus</>
+                        <><Rocket size={20} style={{ marginRight: '0.5rem' }} /> Configure My Trajectory</>
                     )}
                 </button>
             </form>
