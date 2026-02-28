@@ -110,8 +110,8 @@ export default function OnboardingPage() {
                         )}
                     </div>
 
-                    <button onClick={() => router.push('/dashboard/trends')} className="btn-primary" style={{ marginTop: '2rem' }}>
-                        Scan Market Trends <UploadCloud size={18} />
+                    <button onClick={() => router.push('/dashboard/assessment')} className="btn-primary" style={{ marginTop: '2rem' }}>
+                        Take Skill Assessment <UploadCloud size={18} />
                     </button>
                 </div>
             </div>
