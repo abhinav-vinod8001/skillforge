@@ -1,0 +1,199 @@
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem 0;
+}
+
+.centered {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: calc(100vh - 4rem);
+}
+
+.emptyState {
+    text-align: center;
+    margin-top: 10vh;
+}
+
+.header {
+    margin-bottom: 3rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1.5rem;
+}
+
+.title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.01em;
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    max-width: 700px;
+}
+
+.timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 3rem;
+    position: relative;
+}
+
+/* Linear-style timeline line */
+.timeline::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 1.25rem;
+    width: 2px;
+    background: var(--border-subtle);
+    z-index: 0;
+}
+
+.weekCard {
+    display: flex;
+    gap: 2rem;
+    padding: 1.25rem;
+    position: relative;
+    z-index: 1;
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.weekNumber {
+    background: var(--bg-color);
+    border: 2px solid var(--border-color);
+    color: var(--text-secondary);
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-align: center;
+    flex-shrink: 0;
+    position: absolute;
+    left: 0;
+    top: 1.5rem;
+    transform: translateX(-50%);
+    z-index: 2;
+}
+
+/* Hide the number text, just show bullet if preferred, but user liked "Week X" so we keep it small */
+
+.weekContent {
+    flex: 1;
+    padding-left: 2rem;
+    /* space for the absolute circle */
+}
+
+.weekContent h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    color: var(--text-primary);
+}
+
+.weekDesc {
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    line-height: 1.5;
+    font-size: 0.875rem;
+}
+
+.actionItems {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    border-top: 1px solid var(--border-color);
+    padding-top: 1rem;
+}
+
+.actionItem {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+}
+
+.capstoneCard {
+    border: 1px solid var(--accent-secondary);
+    overflow: hidden;
+    margin-top: 2rem;
+    border-radius: var(--radius-lg);
+    background: var(--panel-bg);
+}
+
+.capstoneHeader {
+    background: rgba(31, 111, 235, 0.1);
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.capstoneHeader h2 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.capstoneContent {
+    padding: 1.5rem;
+}
+
+.capstoneContent h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.capstoneContent p {
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+    font-size: 0.875rem;
+}
+
+.capstoneActions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+@media (max-width: 768px) {
+    .timeline::before {
+        display: none;
+    }
+
+    .weekCard {
+        flex-direction: column;
+        padding-top: 3rem;
+    }
+
+    .weekNumber {
+        position: absolute;
+        top: 0;
+        left: 1rem;
+        transform: translateY(-50%);
+    }
+
+    .weekContent {
+        padding-left: 0;
+    }
+
+    .capstoneActions {
+        flex-direction: column;
+    }
+}

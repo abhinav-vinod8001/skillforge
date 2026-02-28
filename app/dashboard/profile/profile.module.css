@@ -1,0 +1,280 @@
+.profilePage {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0.5rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* ─── Profile Header Card ───────────────────────────────── */
+.profileHeader {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 2rem;
+    background: rgba(177, 186, 196, 0.04);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+}
+
+.avatarCircle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, #388bfd, #d2a8ff);
+}
+
+.profileInfo {
+    flex: 1;
+}
+
+.profileName {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.15rem;
+}
+
+.profileEmail {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+}
+
+.levelRow {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.levelBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: rgba(56, 139, 253, 0.12);
+    color: #58a6ff;
+}
+
+.xpBarWrap {
+    flex: 1;
+    max-width: 280px;
+}
+
+.xpLabel {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.xpBar {
+    height: 6px;
+    background: rgba(177, 186, 196, 0.12);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.xpBarFill {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #388bfd, #d2a8ff);
+    transition: width 0.6s ease;
+}
+
+/* ─── Stats Row ─────────────────────────────────────────── */
+.statsRow {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+}
+
+.statCard {
+    background: rgba(177, 186, 196, 0.04);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+    text-align: center;
+}
+
+.statValue {
+    font-size: 1.5rem;
+    font-weight: 700;
+    display: block;
+}
+
+.statLabel {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-top: 0.25rem;
+    display: block;
+}
+
+/* ─── Section ───────────────────────────────────────────── */
+.section {
+    background: rgba(177, 186, 196, 0.04);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+}
+
+.sectionTitle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* ─── Badges Grid ───────────────────────────────────────── */
+.badgesGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 0.75rem;
+}
+
+.badgeCard {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: rgba(177, 186, 196, 0.04);
+}
+
+.badgeCard.earned {
+    border-color: rgba(56, 139, 253, 0.2);
+    background: rgba(56, 139, 253, 0.06);
+}
+
+.badgeCard.locked {
+    opacity: 0.5;
+}
+
+.badgeEmoji {
+    font-size: 1.5rem;
+}
+
+.badgeName {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.badgeDesc {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+}
+
+/* ─── Skills Tags ───────────────────────────────────────── */
+.skillsWrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.skillTag {
+    padding: 0.35rem 0.85rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    background: rgba(177, 186, 196, 0.08);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+.noData {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-style: italic;
+}
+
+/* ─── Activity Timeline ─────────────────────────────────── */
+.timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    position: relative;
+    padding-left: 1.5rem;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 4px;
+    bottom: 4px;
+    width: 2px;
+    background: var(--border-color);
+}
+
+.timelineItem {
+    position: relative;
+    padding: 0.5rem 0;
+    padding-left: 1rem;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+}
+
+.timelineItem::before {
+    content: '';
+    position: absolute;
+    left: -1.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid #388bfd;
+    background: var(--bg-color);
+}
+
+.timelineLabel {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    margin-left: 0.5rem;
+}
+
+/* ─── Two Column Layout ─────────────────────────────────── */
+.twoCol {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+/* ─── Responsive ────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .profileHeader {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .levelRow {
+        flex-direction: column;
+    }
+
+    .statsRow {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .twoCol {
+        grid-template-columns: 1fr;
+    }
+}

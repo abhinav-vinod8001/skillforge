@@ -1,0 +1,179 @@
+.leaderboard {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* ─── Leaderboard Header ────────────────────────────────── */
+.lbHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+
+.lbTitle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.lbSub {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+/* ─── Points Summary ────────────────────────────────────── */
+.pointsSummary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.pointsCard {
+    background: rgba(177, 186, 196, 0.06);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    text-align: center;
+}
+
+.pointsVal {
+    font-size: 1.5rem;
+    font-weight: 700;
+    display: block;
+}
+
+.pointsLabel {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-top: 0.25rem;
+    display: block;
+}
+
+/* ─── Rank Table ────────────────────────────────────────── */
+.rankTable {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 4px;
+}
+
+.rankTable th {
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.rankTable th:first-child {
+    width: 50px;
+    text-align: center;
+}
+
+.rankRow {
+    transition: all 0.2s ease;
+}
+
+.rankRow:hover {
+    transform: translateX(2px);
+}
+
+.rankRow td {
+    padding: 0.65rem 0.75rem;
+    font-size: 0.9rem;
+    background: rgba(177, 186, 196, 0.04);
+    border-top: 1px solid transparent;
+    border-bottom: 1px solid transparent;
+}
+
+.rankRow td:first-child {
+    border-radius: var(--radius-md) 0 0 var(--radius-md);
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.rankRow td:last-child {
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+/* Current user highlight */
+.currentUser td {
+    background: rgba(56, 139, 253, 0.08) !important;
+    border-top: 1px solid rgba(56, 139, 253, 0.2);
+    border-bottom: 1px solid rgba(56, 139, 253, 0.2);
+}
+
+.currentUser td:first-child {
+    border-left: 2px solid #388bfd;
+}
+
+.youTag {
+    display: inline-block;
+    background: rgba(56, 139, 253, 0.15);
+    color: #58a6ff;
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* ─── Medal Styles ──────────────────────────────────────── */
+.medal {
+    font-size: 1.1rem;
+}
+
+/* ─── Badge Column ──────────────────────────────────────── */
+.badgeCell {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.badgeIcon {
+    font-size: 1rem;
+    margin-right: 4px;
+}
+
+/* ─── Name Cell ─────────────────────────────────────────── */
+.nameCell {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+/* ─── Points Column ─────────────────────────────────────── */
+.pointsCell {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ─── Responsive ────────────────────────────────────────── */
+@media (max-width: 600px) {
+    .pointsSummary {
+        grid-template-columns: 1fr;
+    }
+}

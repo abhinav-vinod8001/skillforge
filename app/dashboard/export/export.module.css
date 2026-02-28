@@ -1,0 +1,226 @@
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 2rem 0;
+}
+
+.centered {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: calc(100vh - 4rem);
+}
+
+.emptyState {
+    text-align: center;
+    margin-top: 15vh;
+}
+
+.emptyState h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.01em;
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.certificateWrapper {
+    overflow-x: auto;
+    padding: 2rem;
+    background: var(--panel-bg);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    display: flex;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.certificate {
+    width: 1056px;
+    /* standard 11 inch width in pixels at 96dpi */
+    height: 816px;
+    /* 8.5 inch height */
+    background: #0d1117;
+    position: relative;
+    overflow: hidden;
+    color: #c9d1d9;
+    flex-shrink: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+.certificate::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #0d1117;
+    z-index: 0;
+}
+
+/* Professional thin double border */
+.certInner {
+    position: absolute;
+    top: 24px;
+    left: 24px;
+    right: 24px;
+    bottom: 24px;
+    border: 1px solid #30363d;
+    outline: 1px solid #30363d;
+    outline-offset: -4px;
+    border-radius: 4px;
+    z-index: 1;
+    padding: 3.5rem 4rem;
+    display: flex;
+    flex-direction: column;
+    background: #161b22;
+}
+
+.certHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4rem;
+}
+
+.certLogo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #f0f6fc;
+}
+
+.certDate {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    color: #8b949e;
+    font-size: 0.875rem;
+}
+
+.certBody {
+    text-align: center;
+    flex: 1;
+}
+
+.certPretitle {
+    color: #8b949e;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    font-size: 0.875rem;
+    margin-bottom: 2rem;
+    font-weight: 600;
+}
+
+.certName {
+    font-size: 3.5rem;
+    font-weight: 700;
+    margin-bottom: 2rem;
+    color: #f0f6fc;
+    letter-spacing: -0.02em;
+}
+
+.certDesc {
+    font-size: 1.125rem;
+    color: #8b949e;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+.certMetrics {
+    display: flex;
+    justify-content: center;
+    gap: 3rem;
+    margin-bottom: 4rem;
+    border-top: 1px dashed #30363d;
+    border-bottom: 1px dashed #30363d;
+    padding: 1.5rem 0;
+    width: max-content;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.metric {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.metric span {
+    color: #8b949e;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+
+.metric strong {
+    font-size: 1.5rem;
+    color: #58a6ff;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+.certFooter {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.signatureBlock {
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid #30363d;
+    padding-top: 0.5rem;
+    width: 200px;
+}
+
+.signature {
+    font-family: Georgia, 'Times New Roman', Times, serif;
+    font-style: italic;
+    font-size: 1.5rem;
+    color: #f0f6fc;
+    margin-bottom: 0.25rem;
+}
+
+.signTitle {
+    color: #8b949e;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.qrPlaceholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 4px;
+}
