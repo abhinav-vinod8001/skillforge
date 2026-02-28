@@ -96,7 +96,6 @@ export default function TribunalReviewModal({ code, originalCode, missions, onCl
                             )}
 
                             {results?.map((result, idx) => {
-                                // Simple text analysis to determine pass/fail for the UI coloring if missing explicit boolean array, but since UI only needed red/green, let's just use overallPassed logic or simplistic checks. Actually the prompt says if passed it contains "Passed" or "Failed".
                                 const passedAgent = result.comment.includes('Passed');
                                 return (
                                     <motion.div

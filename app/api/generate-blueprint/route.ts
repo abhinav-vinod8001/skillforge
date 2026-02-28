@@ -37,7 +37,7 @@ Return ONLY a valid JSON object matching this exact structure:
 {
   "title": "A witty title for this mission that hints at the real-world disaster (e.g., 'Mission: The Cloudflare Regex Meltdown')",
   "description": "A 3-4 sentence technical brief presenting this as an investigative puzzle. Explain the real-world production environment context, hint at the twisted logic within, and explicitly state which real-world industry problem or CVE this scenario is simulating.",
-  "initialCode": "The full string of flawed source code (around 40-70 lines long. MUST have properly escaped quotes and newlines to be valid JSON). Make it convincingly bad logic, just like the real incident.",
+  "initialCode": "The full string of flawed source code (around 40-70 lines long. ALL newlines must be explicitly written as \\n and all double quotes must be escaped as \\\" so this is a valid JSON string). Make it convincingly bad logic, just like the real incident.",
   "missions": [
     "Mission 1: Give a puzzle-like clue for the first flaw (e.g., 'Investigate why the authentication token is visible to the client')",
     "Mission 2: Give a clue for the second flaw (e.g., 'Trace the catastrophic rendering loop crashing the browser')",
@@ -55,8 +55,17 @@ Return ONLY a valid JSON object matching this exact structure:
             temperature: 0.8,
         });
 
-        const output = completion.choices[0]?.message?.content || '{}';
-        const projectData = JSON.parse(output);
+        let output = completion.choices[0]?.message?.content || '{}';
+        // Clean up markdown ticks if Llama still includes them despite JSON mode
+        output = output.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+
+        let projectData;
+        try {
+            projectData = JSON.parse(output);
+        } catch (parseError) {
+            console.error("Failed to parse JSON. Raw output was:", output);
+            throw new Error("AI returned malformed JSON that could not be parsed.");
+        }
 
         if (!projectData.initialCode || !projectData.missions) {
             throw new Error("Invalid format returned from AI.");
