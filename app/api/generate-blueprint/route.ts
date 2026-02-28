@@ -27,19 +27,21 @@ User's Training Focus: ${userSkills}
 
 Generate ONE highly realistic, incredibly messy file of code (e.g., a React component, a Python script, or an API route based on their skills).
 
-CRUCIAL REQUIREMENT: The code you generate MUST be heavily inspired by a REAL-WORLD software industry disaster, a famous CVE, a known OWASP Top 10 vulnerability, or a documented engineering post-mortem (e.g., the Cloudflare regex catastrophic backtracking, the GitLab database deletion script, an S3 bucket misconfiguration, Log4j-style injection, or a classic race condition in a high-traffic microservice).
+CRUCIAL REQUIREMENT 1: The code you generate MUST be heavily inspired by a REAL-WORLD software industry disaster, a famous CVE, a known OWASP Top 10 vulnerability, or a documented engineering post-mortem (e.g., the Cloudflare regex catastrophic backtracking, the GitLab database deletion script, an S3 bucket misconfiguration, Log4j-style injection, or a classic race condition in a high-traffic microservice).
+
+CRUCIAL REQUIREMENT 2: Present the scenario as an investigative logic PUZZLE. Do not just make syntax errors. Create deeply twisted, problematic logic and spaghetti architecture that forces the user to truly read, trace, and understand what the program is doing in a real software development environment before they can fix it.
 
 The code should attempt to accomplish a realistic task but contain EXACTLY 3 major industry-standard flaws. One of these flaws MUST be the root cause of the famous real-world disaster you chose.
 
 Return ONLY a valid JSON object matching this exact structure:
 {
   "title": "A witty title for this mission that hints at the real-world disaster (e.g., 'Mission: The Cloudflare Regex Meltdown')",
-  "description": "A 2-3 sentence technical brief explaining what the file does, the chaos within, and explicitly stating which real-world industry problem or CVE this scenario is simulating so the user learns the history of it.",
-  "initialCode": "The full string of flawed source code (around 40-70 lines long. MUST have properly escaped quotes and newlines to be valid JSON). Make it convincingly bad, just like the real incident.",
+  "description": "A 3-4 sentence technical brief presenting this as an investigative puzzle. Explain the real-world production environment context, hint at the twisted logic within, and explicitly state which real-world industry problem or CVE this scenario is simulating.",
+  "initialCode": "The full string of flawed source code (around 40-70 lines long. MUST have properly escaped quotes and newlines to be valid JSON). Make it convincingly bad logic, just like the real incident.",
   "missions": [
-    "Mission 1: Describe the first flaw to fix (e.g., 'Remove the hardcoded AWS key')",
-    "Mission 2: Describe the second flaw (e.g., 'Fix the catastrophic regex backtracking')",
-    "Mission 3: Describe the third flaw (e.g., 'Refactor the O(N^2) data mapping')"
+    "Mission 1: Give a puzzle-like clue for the first flaw (e.g., 'Investigate why the authentication token is visible to the client')",
+    "Mission 2: Give a clue for the second flaw (e.g., 'Trace the catastrophic rendering loop crashing the browser')",
+    "Mission 3: Give a clue for the third flaw (e.g., 'Untangle the O(N^2) data mapping bottleneck')"
   ]
 }`;
 
