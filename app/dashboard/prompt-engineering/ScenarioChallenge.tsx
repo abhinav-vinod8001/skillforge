@@ -286,7 +286,7 @@ export default function ScenarioChallenge() {
                         </div>
                         <div className={styles.statDiv} />
                         <div className={styles.stat}>
-                            <span className={styles.statVal}>{earnedBadges.length}/4</span>
+                            <span className={styles.statVal}>{earnedBadges.length}</span>
                             <span className={styles.statLabel}>Badges</span>
                         </div>
                     </div>
