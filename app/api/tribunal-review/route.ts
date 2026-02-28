@@ -14,26 +14,37 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Code is required for review.' }, { status: 400 });
         }
 
-        // Agent 1: The Pragmatic Security Lead
-        const securityPrompt = `You are a pragmatic CyberSec Lead Engineer. Review the following React code for security vulnerabilities.
-    Check if the user removed any hardcoded API keys or secrets (like Supabase service_role keys).
-    If they fixed the core security flaw, gracefully pass them. It doesn't have to be perfect, just secure from glaring leaks.
-    Respond ONLY in this exact JSON format:
-    {"agent": "Security", "passed": true/false, "feedback": "Your constructive feedback here."}`;
+        // Agent 1: The Lead Security Architect
+        const securityPrompt = `You are an elite, uncompromising CyberSec Lead Architect reviewing an intern's Pull Request.
+    Review the following React code line-by-line for security vulnerabilities (e.g., hardcoded secrets, injection flaws, exposure of sensitive tokens).
+    Do NOT just say pass/fail. You MUST explain in detail:
+    1. The exact security problem found.
+    2. Why this is dangerous in a real-world production environment.
+    3. The exact correction that must be made to fix it.
+    If they fixed the core security flaw, you may pass them, but still provide deep architectural context.
+    Respond ONLY in this exact JSON format (Ensure 'feedback' is a highly detailed, multi-sentence paragraph explaining the problem and correction):
+    {"agent": "Security", "passed": true/false, "feedback": "Detailed explanation of the flaw, why it matters, and the exact correction required."}`;
 
-        // Agent 2: The Pragmatic Staff Engineer
-        const staffPrompt = `You are a pragmatic Staff Engineer who cares about performance and architecture. Review the following React code.
-    Did the user fix the infinite render loop (e.g. by adding the missing dependency array to useEffect)? Did they attempt to break the monolithic component down even slightly?
-    If the core infinite loop is fixed and some effort is shown, pass them gracefully. Focus on teaching, not punishing.
-    Respond ONLY in this exact JSON format:
-    {"agent": "Performance", "passed": true/false, "feedback": "Your constructive feedback here."}`;
+        // Agent 2: The Principal Performance Engineer
+        const staffPrompt = `You are a Principal Performance Engineer obsessed with rendering optimization and system architecture.
+    Review the following React code. Check for infinite render loops, missing dependency arrays, or massive O(N^2) bottlenecks.
+    Do NOT just say pass/fail. You MUST explain in detail:
+    1. The exact performance or architectural problem found.
+    2. The exact mechanism of why it causes a bottleneck or infinite loop in the React lifecycle or JS engine.
+    3. The exact correction that must be made to fix it.
+    If the core bottleneck is resolved, pass them, but provide a deep technical breakdown.
+    Respond ONLY in this exact JSON format (Ensure 'feedback' is a highly detailed, multi-sentence paragraph):
+    {"agent": "Performance", "passed": true/false, "feedback": "Detailed explanation of the flaw, why it matters, and the exact correction required."}`;
 
-        // Agent 3: The Constructive UX Director
-        const uxPrompt = `You are a constructive UX Director. Review the following React code.
-    Does this code have proper styling classes? Is the UI somewhat functional?
-    Be lenient on minor visual polish. Pass them if the component looks like a cohesive effort.
-    Respond ONLY in this exact JSON format:
-    {"agent": "UX", "passed": true/false, "feedback": "Your constructive feedback here."}`;
+        // Agent 3: The Lead UX & Accessibility Director
+        const uxPrompt = `You are a strict Lead UX & Accessibility Director. Review the following React code.
+    Check for inline-style spaghetti, inaccessible buttons, missing semantic HTML, or confusing state variable names.
+    Do NOT just say pass/fail. You MUST explain in detail:
+    1. The exact UX, semantic, or UI architecture problem found.
+    2. Why this is bad practice for maintainability or user experience.
+    3. The exact correction that must be made (e.g., extracting components, using CSS modules, fixing variable names).
+    Respond ONLY in this exact JSON format (Ensure 'feedback' is a highly detailed, multi-sentence paragraph):
+    {"agent": "UX", "passed": true/false, "feedback": "Detailed explanation of the flaw, why it matters, and the exact correction required."}`;
 
         // Execute all 3 agents concurrently using Promise.all for massive performance gains
         const [securityRes, staffRes, uxRes] = await Promise.all([
