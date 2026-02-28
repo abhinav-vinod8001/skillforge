@@ -23,18 +23,52 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     const pathname = usePathname();
-    const { user, isSignedIn } = useUser();
+    const { user, isSignedIn, isLoaded } = useUser();
 
     // Sync Clerk user → localStorage so db.ts can use the userId for Convex
+    // Also clear stale data when switching users or signing out
     useEffect(() => {
+        if (!isLoaded) return;
+
+        const clearLocalData = () => {
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && (key.startsWith('skillforge_') || key.startsWith('praxis_'))) {
+                    keysToRemove.push(key);
+                }
+            }
+            keysToRemove.forEach(k => localStorage.removeItem(k));
+        };
+
         if (isSignedIn && user) {
-            localStorage.setItem('praxis_user', JSON.stringify({
-                id: user.id,
-                email: user.primaryEmailAddress?.emailAddress || '',
-                name: user.fullName || user.firstName || 'User',
-            }));
+            const storedUser = localStorage.getItem('praxis_user');
+            let isDifferentUser = false;
+
+            if (storedUser) {
+                try {
+                    const parsed = JSON.parse(storedUser);
+                    if (parsed.id !== user.id) isDifferentUser = true;
+                } catch {
+                    isDifferentUser = true;
+                }
+            } else {
+                isDifferentUser = true;
+            }
+
+            if (isDifferentUser) {
+                clearLocalData();
+                localStorage.setItem('praxis_user', JSON.stringify({
+                    id: user.id,
+                    email: user.primaryEmailAddress?.emailAddress || '',
+                    name: user.fullName || user.firstName || 'User',
+                }));
+            }
+        } else if (!isSignedIn) {
+            // User signed out, clear everything
+            clearLocalData();
         }
-    }, [isSignedIn, user]);
+    }, [isSignedIn, user, isLoaded]);
 
     const navItems = [
         { label: 'Home', icon: Home, href: '/dashboard' },
