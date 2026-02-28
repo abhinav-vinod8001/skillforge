@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Clock, Flag, Briefcase } from 'lucide-react';
-import { saveSimulatorLog } from '@/utils/convex/db';
+import { saveSimulatorLog, getUserSkills } from '@/utils/convex/db';
 import styles from './simulator.module.css';
 import StandupModal from './StandupModal';
 import TicketBoard, { Ticket } from './TicketBoard';
@@ -17,14 +17,60 @@ interface Message {
     content: string;
 }
 
-// Seed tickets for the sprint board
-const INITIAL_TICKETS: Ticket[] = [
+// Seed tickets for the sprint board (personalized ones will replace these)
+const DEFAULT_TICKETS: Ticket[] = [
     { id: 'TICKET-001', title: 'Fix login redirect after OAuth callback', priority: 'P1', type: 'bug', points: 3, status: 'backlog' },
     { id: 'TICKET-002', title: 'Add dark mode toggle to settings page', priority: 'P2', type: 'feature', points: 2, status: 'backlog' },
     { id: 'TICKET-003', title: 'Write API docs for /users endpoint', priority: 'P2', type: 'docs', points: 1, status: 'backlog' },
 ];
 
 export default function SimulatorPage() {
+
+    // Generate personalized tickets based on user skills
+    function generatePersonalizedTickets(skills: string[]): Ticket[] {
+        const skillSet = skills.map(s => s.toLowerCase());
+        const ticketPool: Ticket[] = [];
+
+        // React / Frontend tickets
+        if (skillSet.some(s => s.includes('react') || s.includes('frontend') || s.includes('next') || s.includes('css') || s.includes('html'))) {
+            ticketPool.push(
+                { id: 'TICKET-001', title: 'Fix hydration mismatch in SSR component', priority: 'P1', type: 'bug', points: 3, status: 'backlog' },
+                { id: 'TICKET-002', title: 'Build responsive dashboard with dark mode', priority: 'P2', type: 'feature', points: 5, status: 'backlog' },
+                { id: 'TICKET-003', title: 'Write unit tests for auth context provider', priority: 'P2', type: 'docs', points: 2, status: 'backlog' },
+            );
+        }
+        // Python / ML / Data tickets
+        else if (skillSet.some(s => s.includes('python') || s.includes('ml') || s.includes('data') || s.includes('django') || s.includes('flask'))) {
+            ticketPool.push(
+                { id: 'TICKET-001', title: 'Fix memory leak in data pipeline batch processor', priority: 'P1', type: 'bug', points: 3, status: 'backlog' },
+                { id: 'TICKET-002', title: 'Add caching layer to ML inference endpoint', priority: 'P2', type: 'feature', points: 4, status: 'backlog' },
+                { id: 'TICKET-003', title: 'Document the ETL pipeline architecture', priority: 'P2', type: 'docs', points: 1, status: 'backlog' },
+            );
+        }
+        // Node / Backend tickets
+        else if (skillSet.some(s => s.includes('node') || s.includes('express') || s.includes('backend') || s.includes('api') || s.includes('sql'))) {
+            ticketPool.push(
+                { id: 'TICKET-001', title: 'Fix N+1 query in user orders endpoint', priority: 'P1', type: 'bug', points: 3, status: 'backlog' },
+                { id: 'TICKET-002', title: 'Implement rate limiting middleware', priority: 'P2', type: 'feature', points: 3, status: 'backlog' },
+                { id: 'TICKET-003', title: 'Write OpenAPI spec for payments API', priority: 'P2', type: 'docs', points: 2, status: 'backlog' },
+            );
+        }
+        // Java / Android / Mobile tickets
+        else if (skillSet.some(s => s.includes('java') || s.includes('kotlin') || s.includes('android') || s.includes('swift') || s.includes('mobile'))) {
+            ticketPool.push(
+                { id: 'TICKET-001', title: 'Fix ANR crash on main thread during sync', priority: 'P1', type: 'bug', points: 3, status: 'backlog' },
+                { id: 'TICKET-002', title: 'Add offline-first caching with Room DB', priority: 'P2', type: 'feature', points: 4, status: 'backlog' },
+                { id: 'TICKET-003', title: 'Document the CI/CD pipeline for app releases', priority: 'P2', type: 'docs', points: 1, status: 'backlog' },
+            );
+        }
+        // Default / fallback
+        else {
+            return DEFAULT_TICKETS;
+        }
+
+        return ticketPool.slice(0, 3);
+    }
+
     // Session phases: standup → workspace → retro → complete
     const [phase, setPhase] = useState<'standup' | 'workspace' | 'retro' | 'complete'>('standup');
     const [standupScore, setStandupScore] = useState(0);
@@ -34,7 +80,10 @@ export default function SimulatorPage() {
     const [isActive, setIsActive] = useState(false);
 
     // Tickets
-    const [tickets, setTickets] = useState<Ticket[]>(INITIAL_TICKETS);
+    const [tickets, setTickets] = useState<Ticket[]>(DEFAULT_TICKETS);
+
+    // User skills for personalization
+    const [userSkillFocus, setUserSkillFocus] = useState('Full Stack Development');
 
     // Messages per channel
     const [channelMessages, setChannelMessages] = useState<Record<Channel, Message[]>>({
@@ -55,6 +104,31 @@ export default function SimulatorPage() {
     const [incidentFired, setIncidentFired] = useState(false);
 
     const router = useRouter();
+
+    // Load user skills and personalize tickets
+    useEffect(() => {
+        const loadSkills = async () => {
+            try {
+                const skills = await getUserSkills();
+                if (skills.length > 0) {
+                    const skillStr = skills.join(', ');
+                    setUserSkillFocus(skillStr);
+
+                    // Generate personalized tickets based on user skills
+                    const personalizedTickets = generatePersonalizedTickets(skills);
+                    setTickets(personalizedTickets);
+
+                    // Also update the initial DM message
+                    setChannelMessages(prev => ({
+                        ...prev,
+                        dm: [{ role: 'assistant', content: `Good morning! I'm Alex, your Engineering Manager. Based on your ${skillStr} background, I've curated 3 tickets for your Sprint Board.\n\n${personalizedTickets.map((t: Ticket) => `${t.id} (${t.priority} ${t.type[0].toUpperCase() + t.type.slice(1)}): ${t.title}`).join('. ')}\n\nStart with the P1. Drag it to "In Progress" on your board when you begin. Let me know when you need help.` }],
+                    }));
+                }
+            } catch { }
+        };
+        loadSkills();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Countdown timer
     useEffect(() => {
@@ -121,7 +195,7 @@ export default function SimulatorPage() {
                 body: JSON.stringify({
                     messages: apiMessages,
                     channel,
-                    skill_focus: 'Full Stack Development',
+                    skill_focus: userSkillFocus,
                 }),
             });
 

@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Trophy, ChevronRight, Zap, Star, Lock, Target, RotateCcw, Send, AlertCircle, CheckCircle, Clock } from 'lucide-react';
-import { getProgress, savePromptProgress, getBadges, saveBadges } from '@/utils/convex/db';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Trophy, ChevronRight, Zap, Star, Lock, Target, RotateCcw, Send, AlertCircle, CheckCircle, Clock, RefreshCw, Sparkles } from 'lucide-react';
+import { getProgress, savePromptProgress, getBadges, saveBadges, getUserSkills } from '@/utils/convex/db';
 import styles from './scenario.module.css';
 
-// ─── CHALLENGE DATA ──────────────────────────────────────────────────── //
-export const CHALLENGES = [
+// ─── FALLBACK CHALLENGE DATA ─────────────────────────────────────────── //
+export const FALLBACK_CHALLENGES = [
     {
         id: 'flood-predictor',
         title: 'Kerala Flood Predictor Bot',
@@ -69,12 +69,19 @@ export const CHALLENGES = [
     }
 ];
 
+// Keep CHALLENGES as the export alias for backward compatibility
+export const CHALLENGES = FALLBACK_CHALLENGES;
+
 const BADGES = [
     { id: 'first-attempt', name: 'First Attempt', icon: '🎯', desc: 'Completed your first challenge', threshold: 1 },
     { id: 'prompt-apprentice', name: 'Prompt Apprentice', icon: '📝', desc: 'Scored 60+ on any challenge', threshold: 60 },
     { id: 'prompt-engineer', name: 'Prompt Engineer', icon: '⚙️', desc: 'Scored 80+ on any challenge', threshold: 80 },
     { id: 'prompt-master', name: 'Prompt Master', icon: '🏆', desc: 'Scored 90+ on any challenge', threshold: 90 },
 ];
+
+const REFRESH_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
+
+type ChallengeData = typeof FALLBACK_CHALLENGES[0];
 
 type ScoreResult = {
     clarity: number;
@@ -91,7 +98,8 @@ type Progress = {
 };
 
 export default function ScenarioChallenge() {
-    const [selectedChallenge, setSelectedChallenge] = useState(CHALLENGES[0]);
+    const [allChallenges, setAllChallenges] = useState<ChallengeData[]>(FALLBACK_CHALLENGES);
+    const [selectedChallenge, setSelectedChallenge] = useState<ChallengeData>(FALLBACK_CHALLENGES[0]);
     const [phase, setPhase] = useState<'select' | 'drafting' | 'disruption' | 'result'>('select');
     const [promptInput, setPromptInput] = useState('');
     const [isEvaluating, setIsEvaluating] = useState(false);
@@ -99,6 +107,38 @@ export default function ScenarioChallenge() {
     const [progress, setProgress] = useState<Progress>({});
     const [earnedBadges, setEarnedBadges] = useState<string[]>([]);
     const [showDisruption, setShowDisruption] = useState(false);
+    const [refreshCountdown, setRefreshCountdown] = useState(3600);
+    const [isLoadingPersonalized, setIsLoadingPersonalized] = useState(false);
+    const lastRefreshRef = useRef<number>(Date.now());
+
+    // Fetch personalized challenges from the API
+    const fetchPersonalizedChallenges = useCallback(async () => {
+        setIsLoadingPersonalized(true);
+        try {
+            const skills = await getUserSkills();
+            // Fetch 3 personalized challenges in parallel
+            const promises = Array.from({ length: 3 }, () =>
+                fetch('/api/generate-challenge', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ skills })
+                }).then(r => r.ok ? r.json() : null).catch(() => null)
+            );
+            const results = await Promise.all(promises);
+            const personalized = results.filter(Boolean) as ChallengeData[];
+
+            if (personalized.length > 0) {
+                // Merge: personalized challenges first, then fallbacks
+                setAllChallenges([...personalized, ...FALLBACK_CHALLENGES]);
+            }
+            lastRefreshRef.current = Date.now();
+            setRefreshCountdown(3600);
+        } catch (e) {
+            console.error('Failed to fetch personalized challenges:', e);
+        } finally {
+            setIsLoadingPersonalized(false);
+        }
+    }, []);
 
     useEffect(() => {
         const loadData = async () => {
@@ -108,8 +148,28 @@ export default function ScenarioChallenge() {
                 const badges = await getBadges();
                 if (badges.length > 0) setEarnedBadges(badges);
             } catch { }
+
+            // Fetch personalized challenges on mount
+            fetchPersonalizedChallenges();
         };
         loadData();
+
+        // Hourly refresh interval
+        const refreshInterval = setInterval(() => {
+            fetchPersonalizedChallenges();
+        }, REFRESH_INTERVAL_MS);
+
+        // Countdown ticker (updates every second)
+        const countdownInterval = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - lastRefreshRef.current) / 1000);
+            setRefreshCountdown(Math.max(0, 3600 - elapsed));
+        }, 1000);
+
+        return () => {
+            clearInterval(refreshInterval);
+            clearInterval(countdownInterval);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleSaveProgress = async (cId: string, score: number) => {
@@ -205,10 +265,16 @@ export default function ScenarioChallenge() {
                         <Target size={18} />
                         <div>
                             <h3>Scenario Challenges</h3>
-                            <p>Real-world prompt engineering tasks. Engineer a prompt, submit for evaluation, earn badges.</p>
+                            <p>Personalized prompt engineering tasks based on your skills. New challenges refresh every hour.</p>
                         </div>
                     </div>
                     <div className={styles.statsBar}>
+                        <div className={styles.stat} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <RefreshCw size={12} className={isLoadingPersonalized ? styles.spin : ''} />
+                            <span className={styles.statVal}>{Math.floor(refreshCountdown / 60)}:{String(refreshCountdown % 60).padStart(2, '0')}</span>
+                            <span className={styles.statLabel}>Refresh</span>
+                        </div>
+                        <div className={styles.statDiv} />
                         <div className={styles.stat}>
                             <span className={styles.statVal}>{totalAttempts}</span>
                             <span className={styles.statLabel}>Attempts</span>
@@ -244,15 +310,19 @@ export default function ScenarioChallenge() {
                 )}
 
                 <div className={styles.challengeGrid}>
-                    {CHALLENGES.map(c => {
+                    {allChallenges.map((c, idx) => {
                         const prog = progress[c.id];
+                        const isPersonalized = idx < allChallenges.length - FALLBACK_CHALLENGES.length;
                         return (
-                            <div key={c.id} className={styles.challengeCard} onClick={() => handleStartChallenge(c)}>
+                            <div key={c.id} className={styles.challengeCard} onClick={() => handleStartChallenge(c)} style={isPersonalized ? { border: '1px solid rgba(139, 92, 246, 0.3)', background: 'rgba(139, 92, 246, 0.05)' } : {}}>
                                 <div className={styles.challengeCardTop}>
                                     <span className={styles.challengeIcon}>{c.icon}</span>
                                     <div>
-                                        <div className={styles.challengeTitle}>{c.title}</div>
-                                        <div className={styles.challengeCategory}>{c.category}</div>
+                                        <div className={styles.challengeTitle} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            {c.title}
+                                            {isPersonalized && <Sparkles size={14} style={{ color: '#a78bfa' }} />}
+                                        </div>
+                                        <div className={styles.challengeCategory}>{c.category}{isPersonalized ? ' • Personalized' : ''}</div>
                                     </div>
                                     {prog?.completed && <CheckCircle size={18} className={styles.donecheck} />}
                                 </div>
