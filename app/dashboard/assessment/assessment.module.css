@@ -1,6 +1,6 @@
 .container {
     padding: 2rem;
-    max-width: 1400px;
+    max-width: 1000px;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
@@ -32,7 +32,8 @@
 
 .loadingScreen,
 .successScreen,
-.failScreen {
+.failScreen,
+.antiCheatScreen {
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -52,59 +53,16 @@
     color: var(--text-primary);
 }
 
-.workspace {
-    display: grid;
-    grid-template-columns: 1fr 350px;
-    gap: 1.5rem;
-    flex: 1;
-}
-
-.editorPanel {
-    background: #0d1117;
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-}
-
-.editorHeader {
-    background: rgba(22, 27, 34, 0.8);
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid var(--border-color);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-}
-
-.languageBadge {
-    background: rgba(88, 166, 255, 0.1);
-    color: #58a6ff;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-}
-
-.taskPanel {
+.mcqPanel {
     background: rgba(13, 17, 23, 0.6);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-lg);
-    padding: 1.5rem;
+    padding: 2rem;
     display: flex;
     flex-direction: column;
-}
-
-.taskTitle {
-    font-size: 1.2rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
-    color: var(--text-primary);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    /* Anti-cheat specific styles */
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .conceptBox {
@@ -113,8 +71,9 @@
     border: 1px solid rgba(210, 168, 255, 0.2);
     padding: 0.75rem;
     border-radius: var(--radius-md);
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
     font-size: 0.9rem;
+    text-align: center;
 }
 
 .conceptLabel {
@@ -126,19 +85,74 @@
     margin-bottom: 0.25rem;
 }
 
-.instructions {
-    color: #c9d1d9;
-    font-size: 0.95rem;
-    line-height: 1.5;
+.question {
+    font-size: 1.25rem;
+    color: var(--text-primary);
+    line-height: 1.6;
+    margin-bottom: 2rem;
+    text-align: center;
+    font-weight: 600;
+}
+
+.optionsGrid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
     margin-bottom: 2rem;
 }
 
-.submitBtn {
-    margin-top: auto;
-    width: 100%;
+.optionBtn {
+    background: rgba(33, 38, 45, 0.6);
+    border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
+    padding: 1rem 1.5rem;
+    color: var(--text-primary);
+    font-size: 1rem;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.optionBtn:hover:not(:disabled) {
+    background: rgba(48, 54, 61, 0.8);
+    border-color: #8b949e;
+}
+
+.optionBtn.selected {
+    background: rgba(88, 166, 255, 0.15);
+    border-color: #58a6ff;
+}
+
+.optionBtn.correct {
+    background: rgba(46, 160, 67, 0.15);
+    border-color: #3fb950;
+}
+
+.optionBtn.wrong {
+    background: rgba(248, 81, 73, 0.15);
+    border-color: #f85149;
+}
+
+.optionIndex {
+    background: rgba(255, 255, 255, 0.1);
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.submitBtn {
+    width: 100%;
     padding: 1rem;
     font-weight: 600;
+    font-size: 1.1rem;
 }
 
 .feedbackBox {
@@ -172,20 +186,15 @@
     line-height: 1.5;
 }
 
-.prereqBox {
-    margin-top: 1rem;
-    padding-top: 1rem;
-    border-top: 1px dashed var(--border-color);
-    font-size: 0.9rem;
-}
-
-.prereqLabel {
-    color: #f85149;
-    font-weight: 600;
-}
-
 .actionGrid {
     display: flex;
     gap: 1rem;
     margin-top: 1rem;
+}
+
+.antiCheatWarning {
+    color: #f85149;
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin: 1.5rem 0 1rem;
 }

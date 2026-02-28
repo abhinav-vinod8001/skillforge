@@ -72,8 +72,7 @@ export default function DashboardLayout({
 
     const navItems = [
         { label: 'Home', icon: Home, href: '/dashboard' },
-        { label: 'Onboarding', icon: UploadCloud, href: '/dashboard/onboarding' },
-        { label: 'Market Trends', icon: TrendingUp, href: '/dashboard/trends' },
+        { label: 'Get Started', icon: UploadCloud, href: '/dashboard/onboarding' },
         { label: 'My Roadmap', icon: Map, href: '/dashboard/roadmap' },
         { label: 'Forge Projects', icon: FolderGit2, href: '/dashboard/project' },
         { label: 'Prompt Lab', icon: TerminalSquare, href: '/dashboard/prompt-engineering' },
