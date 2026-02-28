@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Trophy, ChevronRight, Zap, Star, Lock, Target, RotateCcw, Send, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { getProgress, savePromptProgress, getBadges, saveBadges } from '@/utils/convex/db';
 import styles from './scenario.module.css';
 
 // ─── CHALLENGE DATA ──────────────────────────────────────────────────── //
@@ -100,16 +101,18 @@ export default function ScenarioChallenge() {
     const [showDisruption, setShowDisruption] = useState(false);
 
     useEffect(() => {
-        // Load progress from localStorage
-        try {
-            const saved = localStorage.getItem('skillforge_prompt_progress');
-            if (saved) setProgress(JSON.parse(saved));
-            const badges = localStorage.getItem('skillforge_prompt_badges');
-            if (badges) setEarnedBadges(JSON.parse(badges));
-        } catch { }
+        const loadData = async () => {
+            try {
+                const { promptProgress } = await getProgress();
+                if (Object.keys(promptProgress).length > 0) setProgress(promptProgress as any);
+                const badges = await getBadges();
+                if (badges.length > 0) setEarnedBadges(badges);
+            } catch { }
+        };
+        loadData();
     }, []);
 
-    const saveProgress = (cId: string, score: number) => {
+    const handleSaveProgress = async (cId: string, score: number) => {
         const prev = progress[cId] || { bestScore: 0, attempts: 0, completed: false };
         const updated = {
             ...progress,
@@ -120,7 +123,7 @@ export default function ScenarioChallenge() {
             }
         };
         setProgress(updated);
-        localStorage.setItem('skillforge_prompt_progress', JSON.stringify(updated));
+        await savePromptProgress(updated);
 
         // Check badge unlocks
         const newBadges = [...earnedBadges];
@@ -131,7 +134,7 @@ export default function ScenarioChallenge() {
         else if (score >= 80 && !newBadges.includes('prompt-engineer')) newBadges.push('prompt-engineer');
         else if (score >= 60 && !newBadges.includes('prompt-apprentice')) newBadges.push('prompt-apprentice');
         setEarnedBadges(newBadges);
-        localStorage.setItem('skillforge_prompt_badges', JSON.stringify(newBadges));
+        await saveBadges(newBadges);
     };
 
     const handleStartChallenge = (challenge: typeof CHALLENGES[0]) => {
@@ -159,7 +162,7 @@ export default function ScenarioChallenge() {
             const data: ScoreResult = await res.json();
             setScoreResult(data);
             setPhase('result');
-            saveProgress(selectedChallenge.id, data.total);
+            handleSaveProgress(selectedChallenge.id, data.total);
         } catch {
             setScoreResult({
                 clarity: 0, specificity: 0, effectiveness: 0,

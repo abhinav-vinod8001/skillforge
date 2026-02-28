@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Trophy, Medal, Crown, Star, TrendingUp } from 'lucide-react';
+import { getProgress, getBadges } from '@/utils/convex/db';
 import styles from './leaderboard.module.css';
 
 // Simulated competitor data with realistic Indian names
@@ -43,62 +44,57 @@ export default function Leaderboard() {
     >([]);
 
     useEffect(() => {
-        try {
-            let points = 0;
-            let challenges = 0;
-            let bestScore = 0;
+        const loadData = async () => {
+            try {
+                let points = 0;
+                let challenges = 0;
+                let bestScore = 0;
 
-            // Prompt Lab scores
-            const progress = localStorage.getItem('skillforge_prompt_progress');
-            if (progress) {
-                const parsed = JSON.parse(progress);
-                for (const key of Object.keys(parsed)) {
-                    const p = parsed[key] as { bestScore: number; completed: boolean };
+                const { forgeLevel, promptProgress } = await getProgress();
+
+                // Prompt Lab scores
+                for (const key of Object.keys(promptProgress)) {
+                    const p = promptProgress[key] as { bestScore: number; completed: boolean };
                     points += p.bestScore || 0;
                     if (p.completed) challenges++;
                     if (p.bestScore > bestScore) bestScore = p.bestScore;
                 }
+
+                // Forge Projects missions
+                points += forgeLevel * 50;
+
+                // Badges bonus
+                const earnedBadges = await getBadges();
+                points += earnedBadges.length * 25;
+
+                const badge = getBadgeFromScore(bestScore, earnedBadges);
+
+                setUserPoints(points);
+                setUserChallenges(challenges);
+                setUserBadge(badge);
+
+                // Build combined leaderboard
+                const currentUser = {
+                    name: 'You',
+                    points,
+                    challengesDone: challenges,
+                    badge,
+                    color: '#388bfd',
+                    isUser: true,
+                };
+
+                const all = [
+                    ...SIMULATED_USERS.map(u => ({ ...u, isUser: false })),
+                    currentUser,
+                ].sort((a, b) => b.points - a.points);
+
+                setLeaderboard(all);
+                setUserRank(all.findIndex(u => u.isUser) + 1);
+            } catch {
+                setLeaderboard(SIMULATED_USERS.map(u => ({ ...u, isUser: false })));
             }
-
-            // Forge Projects missions
-            const forgeLevel = localStorage.getItem('skillforge_forge_level');
-            if (forgeLevel) {
-                const lvl = parseInt(forgeLevel, 10);
-                points += lvl * 50; // 50 pts per mission
-            }
-
-            // Badges bonus
-            const badges = localStorage.getItem('skillforge_prompt_badges');
-            const earnedBadges: string[] = badges ? JSON.parse(badges) : [];
-            points += earnedBadges.length * 25;
-
-            const badge = getBadgeFromScore(bestScore, earnedBadges);
-
-            setUserPoints(points);
-            setUserChallenges(challenges);
-            setUserBadge(badge);
-
-            // Build combined leaderboard
-            const currentUser = {
-                name: 'You',
-                points,
-                challengesDone: challenges,
-                badge,
-                color: '#388bfd',
-                isUser: true,
-            };
-
-            const all = [
-                ...SIMULATED_USERS.map(u => ({ ...u, isUser: false })),
-                currentUser,
-            ].sort((a, b) => b.points - a.points);
-
-            setLeaderboard(all);
-            setUserRank(all.findIndex(u => u.isUser) + 1);
-        } catch {
-            // localStorage unavailable
-            setLeaderboard(SIMULATED_USERS.map(u => ({ ...u, isUser: false })));
-        }
+        };
+        loadData();
     }, []);
 
     return (

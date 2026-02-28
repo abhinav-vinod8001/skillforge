@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Map, Loader2, CheckCircle2, ChevronRight, PlayCircle, BookOpen, Code2 } from 'lucide-react';
+import { Map, Loader2, CheckCircle2, ChevronRight, PlayCircle, BookOpen, Code2, RefreshCw, AlertCircle } from 'lucide-react';
+import { getSkills, getRoadmap, saveRoadmap, deleteRoadmap } from '@/utils/convex/db';
 import styles from './roadmap.module.css';
 
 interface RoadmapData {
@@ -21,90 +22,213 @@ interface RoadmapData {
     };
 }
 
+interface Trend {
+    skill_name: string;
+    growth_percentage: number;
+    demand_level: string;
+    context: string;
+}
+
+const FALLBACK_TRENDS: Trend[] = [
+    { skill_name: 'Agentic AI', growth_percentage: 45, demand_level: 'High', context: 'High demand in enterprise automation' },
+    { skill_name: 'Rust', growth_percentage: 30, demand_level: 'Medium', context: 'Systems programming and WebAssembly' },
+    { skill_name: 'DevSecOps', growth_percentage: 35, demand_level: 'High', context: 'Security shift-left demand' },
+    { skill_name: 'LLM Fine-tuning', growth_percentage: 50, demand_level: 'High', context: 'Custom AI model development' },
+    { skill_name: 'Platform Engineering', growth_percentage: 28, demand_level: 'Medium', context: 'Internal developer platforms' },
+];
+
 export default function RoadmapPage() {
     const [roadmap, setRoadmap] = useState<RoadmapData | null>(null);
     const [loading, setLoading] = useState(true);
     const [generating, setGenerating] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [statusMessage, setStatusMessage] = useState('');
     const router = useRouter();
 
-    useEffect(() => {
-        fetchSavedRoadmap();
-    }, []);
-
-    const fetchSavedRoadmap = async () => {
-        setLoading(true);
-        const stored = localStorage.getItem('skillforge_roadmap');
-        if (stored) {
-            try {
-                setRoadmap(JSON.parse(stored));
-            } catch {
-                console.error('Invalid roadmap data in localStorage, clearing.');
-                localStorage.removeItem('skillforge_roadmap');
-            }
-        }
-        setLoading(false);
+    const getUserSkills = async (): Promise<string[]> => {
+        try {
+            const skills = await getSkills();
+            if (skills.length > 0) return skills;
+        } catch { /* ignore */ }
+        return [];
     };
 
-    const generateRoadmap = async () => {
-        setGenerating(true);
+    const fetchLiveTrends = async (userSkills: string[]): Promise<Trend[]> => {
         try {
-            let skills: string[];
-            try {
-                skills = JSON.parse(localStorage.getItem('skillforge_skills') || '["Basic Programming"]');
-            } catch {
-                skills = ['Basic Programming'];
+            // Try cached trends first
+            const cached = localStorage.getItem('skillforge_trends_cache');
+            if (cached) {
+                const { data, timestamp } = JSON.parse(cached);
+                // Use cache if it's less than 30 minutes old
+                if (Date.now() - timestamp < 30 * 60 * 1000 && Array.isArray(data) && data.length > 0) {
+                    return data;
+                }
+            }
+            // Fetch fresh personalized trends
+            const res = await fetch('/api/scrape', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ skills: userSkills }),
+            });
+            if (!res.ok) throw new Error('Trends API failed');
+            const json = await res.json();
+            const trends: Trend[] = json.trends || [];
+            if (trends.length > 0) {
+                localStorage.setItem('skillforge_trends_cache', JSON.stringify({ data: trends, timestamp: Date.now() }));
+                return trends;
+            }
+        } catch {
+            console.warn('Could not fetch personalized live trends, using fallback.');
+        }
+        return FALLBACK_TRENDS;
+    };
+
+    const generateRoadmap = useCallback(async () => {
+        setGenerating(true);
+        setError(null);
+
+        try {
+            const skills = await getUserSkills();
+
+            setStatusMessage('Scanning live market trends...');
+            const trends = await fetchLiveTrends(skills);
+
+            if (skills.length === 0) {
+                setStatusMessage('No syllabus found, generating a general roadmap...');
+            } else {
+                setStatusMessage(`Building your personalized roadmap for ${skills.length} skills...`);
             }
 
-            // Use static fallback trends since Supabase auth is bypassed
-            const trends = [
-                { skill_name: "Agentic AI", growth_percentage: 45, demand_level: "High", context: "High demand in enterprise" },
-                { skill_name: "Rust", growth_percentage: 30, demand_level: "Medium", context: "Systems programming safety" },
-                { skill_name: "DevSecOps", growth_percentage: 35, demand_level: "High", context: "Security shift-left demand" },
-            ];
+            const skillsToSend = skills.length > 0
+                ? skills
+                : ['Problem Solving', 'Basic Programming', 'Logical Thinking'];
 
             const res = await fetch('/api/generate-roadmap', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ skills, trends })
+                body: JSON.stringify({
+                    skills: skillsToSend,
+                    trends: trends.slice(0, 8), // send top 8 trends
+                })
             });
 
-            if (!res.ok) throw new Error(`API error: ${res.status}`);
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                throw new Error(errorData.error || `API error: ${res.status}`);
+            }
 
-            const newRoadmap = await res.json();
+            const newRoadmap: RoadmapData = await res.json();
 
-            // Save it
-            localStorage.setItem('skillforge_roadmap', JSON.stringify(newRoadmap));
+            // Validate structure
+            if (!newRoadmap.focus_trend || !Array.isArray(newRoadmap.weeks)) {
+                throw new Error('Invalid roadmap structure received from AI.');
+            }
 
+            await saveRoadmap(newRoadmap as any);
             setRoadmap(newRoadmap);
-        } catch (error) {
-            console.error("Failed to generate roadmap", error);
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : 'Unknown error occurred.';
+            console.error('Roadmap generation failed:', msg);
+            setError(msg);
         } finally {
             setGenerating(false);
+            setStatusMessage('');
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
+        const loadExisting = async () => {
+            const saved = await getRoadmap();
+            if (saved && (saved as any).focus_trend && Array.isArray((saved as any).weeks)) {
+                setRoadmap(saved as any);
+                setLoading(false);
+                return;
+            }
+            // No valid saved roadmap — auto-generate
+            setLoading(false);
+            generateRoadmap();
+        };
+        loadExisting();
+    }, [generateRoadmap]);
+
+    const handleRegenerate = async () => {
+        await deleteRoadmap();
+        setRoadmap(null);
+        generateRoadmap();
     };
 
-    if (loading) {
-        return <div className={styles.centered}><Loader2 className="animate-spin text-gradient" size={48} /></div>;
+    // ── Loading / Generating State ──────────────────────────────────────────
+    if (loading || generating) {
+        return (
+            <div className={styles.centered}>
+                <Loader2 className="animate-spin" size={48} style={{ color: 'var(--accent-purple)' }} />
+                <p style={{ marginTop: '1.5rem', color: 'var(--text-secondary)', textAlign: 'center' }}>
+                    {statusMessage || 'Loading your roadmap...'}
+                </p>
+            </div>
+        );
     }
 
+    // ── Error State ─────────────────────────────────────────────────────────
+    if (error) {
+        return (
+            <div className={`animate-fade-in ${styles.emptyState}`}>
+                <AlertCircle size={64} style={{ margin: '0 auto 1.5rem', display: 'block', color: '#f85149' }} />
+                <h1 className={styles.title}>Generation Failed</h1>
+                <p className={styles.subtitle} style={{ color: '#f85149' }}>{error}</p>
+                <p className={styles.subtitle} style={{ marginTop: '0.5rem' }}>
+                    Make sure you have uploaded your syllabus first.
+                </p>
+                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '2rem', flexWrap: 'wrap' }}>
+                    <button onClick={handleRegenerate} className="btn-primary">
+                        <RefreshCw size={18} /> Try Again
+                    </button>
+                    <button onClick={() => router.push('/dashboard/onboarding')} className="btn-glass">
+                        Upload Syllabus First
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // ── Empty / No Roadmap ──────────────────────────────────────────────────
     if (!roadmap) {
         return (
             <div className={`animate-fade-in ${styles.emptyState}`}>
                 <Map size={64} className="text-gradient" style={{ margin: '0 auto 1.5rem', display: 'block' }} />
                 <h1 className={styles.title}>No Roadmap Found</h1>
                 <p className={styles.subtitle}>Let our AI analyze your skills against the market to forge your path.</p>
-                <button onClick={generateRoadmap} className="btn-primary" disabled={generating} style={{ marginTop: '2rem' }}>
-                    {generating ? <><Loader2 className="animate-spin" size={18} /> Forging Path...</> : 'Generate My Forge Path'}
-                </button>
+                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '2rem', flexWrap: 'wrap' }}>
+                    <button onClick={handleRegenerate} className="btn-primary" disabled={generating}>
+                        {generating ? <><Loader2 className="animate-spin" size={18} /> Forging Path...</> : 'Generate My Forge Path'}
+                    </button>
+                    <button onClick={() => router.push('/dashboard/onboarding')} className="btn-glass">
+                        Upload Syllabus First
+                    </button>
+                </div>
             </div>
         );
     }
 
+    // ── Roadmap Display ─────────────────────────────────────────────────────
     return (
         <div className={`animate-fade-in ${styles.container}`}>
             <div className={styles.header}>
-                <h1 className={styles.title}>Your Forge Path: <span className="text-gradient">{roadmap.focus_trend}</span></h1>
-                <p className={styles.subtitle}>{roadmap.reason}</p>
+                <div>
+                    <h1 className={styles.title}>
+                        Your Forge Path: <span className="text-gradient">{roadmap.focus_trend}</span>
+                    </h1>
+                    <p className={styles.subtitle}>{roadmap.reason}</p>
+                </div>
+                <button
+                    onClick={handleRegenerate}
+                    className="btn-glass"
+                    title="Regenerate roadmap"
+                    style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                >
+                    <RefreshCw size={16} /> Regenerate
+                </button>
             </div>
 
             <div className={styles.timeline}>
@@ -134,7 +258,10 @@ export default function RoadmapPage() {
                     </div>
                 )) : (
                     <div className="glass-panel" style={{ textAlign: 'center', padding: '2rem' }}>
-                        <p>No weekly roadmap data was generated. Please try forging a path again.</p>
+                        <p>No weekly roadmap data was generated. Please try again.</p>
+                        <button onClick={handleRegenerate} className="btn-primary" style={{ marginTop: '1rem' }}>
+                            <RefreshCw size={16} /> Retry
+                        </button>
                     </div>
                 )}
             </div>

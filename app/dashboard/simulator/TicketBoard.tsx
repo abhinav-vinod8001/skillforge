@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, DragEvent } from 'react';
+import React, { useState } from 'react';
 import { Bug, Lightbulb, FileText, GripVertical, AlertTriangle, ArrowUp, ArrowRight, ArrowDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import styles from './simulator.module.css';
@@ -41,12 +41,12 @@ export default function TicketBoard({ tickets, onMoveTicket }: TicketBoardProps)
     const [draggedTicket, setDraggedTicket] = useState<string | null>(null);
     const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
 
-    const handleDragStart = (e: DragEvent, ticketId: string) => {
+    const handleDragStart = (e: React.DragEvent<HTMLDivElement>, ticketId: string) => {
         setDraggedTicket(ticketId);
         e.dataTransfer.effectAllowed = 'move';
     };
 
-    const handleDragOver = (e: DragEvent, columnKey: string) => {
+    const handleDragOver = (e: React.DragEvent<HTMLDivElement>, columnKey: string) => {
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
         setDragOverColumn(columnKey);
@@ -56,7 +56,7 @@ export default function TicketBoard({ tickets, onMoveTicket }: TicketBoardProps)
         setDragOverColumn(null);
     };
 
-    const handleDrop = (e: DragEvent, columnKey: Ticket['status']) => {
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>, columnKey: Ticket['status']) => {
         e.preventDefault();
         if (draggedTicket) {
             onMoveTicket(draggedTicket, columnKey);
@@ -103,7 +103,7 @@ export default function TicketBoard({ tickets, onMoveTicket }: TicketBoardProps)
                                                 animate={{ opacity: 1, scale: 1 }}
                                                 exit={{ opacity: 0, scale: 0.9 }}
                                                 draggable
-                                                onDragStart={e => handleDragStart(e, ticket.id)}
+                                                onDragStartCapture={e => handleDragStart(e, ticket.id)}
                                                 className={`${styles.ticketCard} ${draggedTicket === ticket.id ? styles.ticketDragging : ''}`}
                                             >
                                                 <div className={styles.ticketTop}>

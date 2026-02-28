@@ -15,6 +15,7 @@ import {
     Lock,
     BarChart3,
 } from 'lucide-react';
+import { getProgress, getBadges, getSkills, getSimulatorLog, saveBadges } from '@/utils/convex/db';
 import styles from './profile.module.css';
 
 // ─── LEVEL SYSTEM ──────────────────────────────────────── //
@@ -66,87 +67,84 @@ export default function ProfilePage() {
     const [promptProgress, setPromptProgress] = useState<Record<string, { bestScore: number; attempts: number; completed: boolean }>>({});
 
     useEffect(() => {
-        try {
-            // User info
-            const user = localStorage.getItem('praxis_user');
-            if (user) {
-                const parsed = JSON.parse(user);
-                setUserName(parsed.name || 'User');
-                setUserEmail(parsed.email || '');
-            }
-
-            let xp = 0;
-            const activityLog: { text: string; label: string }[] = [];
-
-            // Forge progress
-            const forgeLvl = parseInt(localStorage.getItem('skillforge_forge_level') || '0', 10);
-            setForgeLevel(forgeLvl);
-            xp += forgeLvl * 50;
-            for (let i = 1; i <= forgeLvl; i++) {
-                activityLog.push({
-                    text: `Completed ${FORGE_MISSION_NAMES[i] || `Forge Mission ${i}`}`,
-                    label: 'Forge Projects',
-                });
-            }
-
-            // Prompt progress
-            const progress = localStorage.getItem('skillforge_prompt_progress');
-            if (progress) {
-                const parsed = JSON.parse(progress);
-                setPromptProgress(parsed);
-                let challenges = 0;
-                let attempts = 0;
-                let best = 0;
-                for (const [key, val] of Object.entries(parsed)) {
-                    const p = val as { bestScore: number; attempts: number; completed: boolean };
-                    xp += p.bestScore;
-                    attempts += p.attempts;
-                    if (p.bestScore > best) best = p.bestScore;
-                    if (p.completed) {
-                        challenges++;
-                        activityLog.push({
-                            text: `Scored ${p.bestScore} on ${CHALLENGE_NAMES[key] || key}`,
-                            label: 'Prompt Lab',
-                        });
-                    }
+        const loadProfile = async () => {
+            try {
+                // User info
+                const user = localStorage.getItem('praxis_user');
+                if (user) {
+                    const parsed = JSON.parse(user);
+                    setUserName(parsed.name || 'User');
+                    setUserEmail(parsed.email || '');
                 }
-                setPromptChallengesDone(challenges);
-                setTotalAttempts(attempts);
-                setBestScore(best);
+
+                let xp = 0;
+                const activityLog: { text: string; label: string }[] = [];
+
+                // Forge + Prompt progress
+                const { forgeLevel: forgeLvl, promptProgress: pp } = await getProgress();
+                setForgeLevel(forgeLvl);
+                xp += forgeLvl * 50;
+                for (let i = 1; i <= forgeLvl; i++) {
+                    activityLog.push({
+                        text: `Completed ${FORGE_MISSION_NAMES[i] || `Forge Mission ${i}`}`,
+                        label: 'Forge Projects',
+                    });
+                }
+
+                if (Object.keys(pp).length > 0) {
+                    setPromptProgress(pp as any);
+                    let challenges = 0;
+                    let attempts = 0;
+                    let best = 0;
+                    for (const [key, val] of Object.entries(pp)) {
+                        const p = val as { bestScore: number; attempts: number; completed: boolean };
+                        xp += p.bestScore;
+                        attempts += p.attempts;
+                        if (p.bestScore > best) best = p.bestScore;
+                        if (p.completed) {
+                            challenges++;
+                            activityLog.push({
+                                text: `Scored ${p.bestScore} on ${CHALLENGE_NAMES[key] || key}`,
+                                label: 'Prompt Lab',
+                            });
+                        }
+                    }
+                    setPromptChallengesDone(challenges);
+                    setTotalAttempts(attempts);
+                    setBestScore(best);
+                }
+
+                // Badges
+                const badgeList: string[] = await getBadges();
+                if (forgeLvl >= 1 && !badgeList.includes('forge-starter')) badgeList.push('forge-starter');
+                if (forgeLvl >= 3 && !badgeList.includes('forge-veteran')) badgeList.push('forge-veteran');
+
+                // Sim results
+                const simLog = await getSimulatorLog();
+                if (simLog) {
+                    setSimCompleted(true);
+                    if (!badgeList.includes('sim-complete')) badgeList.push('sim-complete');
+                    activityLog.push({ text: 'Completed Intern Simulation', label: 'Simulator' });
+                }
+
+                // Skills
+                const skillData = await getSkills();
+                if (skillData.length > 0) {
+                    setSkills(skillData);
+                    if (!badgeList.includes('skill-scanner')) badgeList.push('skill-scanner');
+                    activityLog.push({ text: 'Uploaded syllabus for skill analysis', label: 'Onboarding' });
+                }
+
+                xp += badgeList.length * 25;
+                setEarnedBadges(badgeList);
+                await saveBadges(badgeList);
+                setTotalXP(xp);
+                setActivities(activityLog.reverse());
+            } catch {
+                // Fallback
             }
-
-            // Badges
-            const badges = localStorage.getItem('skillforge_prompt_badges');
-            const badgeList: string[] = badges ? JSON.parse(badges) : [];
-
-            // Auto-add forge badges
-            if (forgeLvl >= 1 && !badgeList.includes('forge-starter')) badgeList.push('forge-starter');
-            if (forgeLvl >= 3 && !badgeList.includes('forge-veteran')) badgeList.push('forge-veteran');
-
-            // Sim results
-            const simLog = localStorage.getItem('skillforge_log');
-            if (simLog) {
-                setSimCompleted(true);
-                if (!badgeList.includes('sim-complete')) badgeList.push('sim-complete');
-                activityLog.push({ text: 'Completed Intern Simulation', label: 'Simulator' });
-            }
-
-            // Skills
-            const skillData = localStorage.getItem('skillforge_skills');
-            if (skillData) {
-                const parsed = JSON.parse(skillData);
-                setSkills(parsed);
-                if (!badgeList.includes('skill-scanner')) badgeList.push('skill-scanner');
-                activityLog.push({ text: 'Uploaded syllabus for skill analysis', label: 'Onboarding' });
-            }
-
-            xp += badgeList.length * 25;
-            setEarnedBadges(badgeList);
-            setTotalXP(xp);
-            setActivities(activityLog.reverse()); // newest first
-        } catch {
-            // Fallback
-        }
+        };
+        loadProfile();
     }, []);
 
     // Compute level

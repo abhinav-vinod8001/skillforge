@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { getProgress, getBadges } from '@/utils/convex/db';
 import {
     UploadCloud,
     TrendingUp,
@@ -75,33 +76,29 @@ export default function DashboardHome() {
     const [badgeCount, setBadgeCount] = useState(0);
 
     useEffect(() => {
-        // Pull stats from localStorage
-        try {
-            const level = localStorage.getItem('skillforge_forge_level');
-            if (level) setForgeLevel(parseInt(level, 10));
+        const loadStats = async () => {
+            try {
+                const { forgeLevel: fl, promptProgress: pp } = await getProgress();
+                setForgeLevel(fl);
 
-            const progress = localStorage.getItem('skillforge_prompt_progress');
-            if (progress) {
-                const parsed = JSON.parse(progress);
-                const completed = Object.values(parsed).filter(
+                const completed = Object.values(pp).filter(
                     (p: unknown) => (p as { completed: boolean }).completed
                 ).length;
                 setPromptChallenges(completed);
 
-                // Calculate total points from best scores
-                const pts = Object.values(parsed).reduce(
+                const pts = Object.values(pp).reduce(
                     (sum: number, p: unknown) => sum + ((p as { bestScore: number }).bestScore || 0),
                     0
                 );
-                setTotalPoints(pts + forgeLevel * 50);
-            }
+                setTotalPoints(pts + fl * 50);
 
-            const badges = localStorage.getItem('skillforge_prompt_badges');
-            if (badges) setBadgeCount(JSON.parse(badges).length);
-        } catch {
-            // localStorage unavailable
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+                const b = await getBadges();
+                setBadgeCount(b.length);
+            } catch {
+                // data unavailable
+            }
+        };
+        loadStats();
     }, []);
 
     return (

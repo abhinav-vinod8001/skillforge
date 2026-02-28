@@ -1,11 +1,25 @@
 import { NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
 
-const groq = new Groq({
-    apiKey: process.env.GROQ_API_KEY,
-});
+// Helper to distribute load across available keys
+const getGroqKey = () => {
+    const keys = [
+        process.env.GROQ_API_KEY,
+        process.env.GROQ_API_KEY_SECURITY,
+        process.env.GROQ_API_KEY_PERFORMANCE,
+        process.env.GROQ_API_KEY_UX
+    ].filter(Boolean); // Only use keys that actually exist
+
+    // Pick a random key
+    return keys[Math.floor(Math.random() * keys.length)];
+};
 
 export async function POST(request: Request) {
+    // Instantiate per-request so the random key selection actually rotates
+    const groq = new Groq({
+        apiKey: getGroqKey() || process.env.GROQ_API_KEY,
+    });
+
     try {
         const { text } = await request.json();
 
@@ -17,7 +31,7 @@ export async function POST(request: Request) {
             messages: [
                 {
                     role: 'system',
-                    content: 'You are an expert technical curriculum analyzer. Extract precisely a JSON array of technical/soft skills found in the provided syllabus text. Only return the JSON array, no extra text.'
+                    content: 'You are an expert technical curriculum analyzer. Extract the technical/soft skills found in the provided syllabus text. You must return a valid JSON object with a single key "skills" containing an array of strings. Do not return a raw array.'
                 },
                 {
                     role: 'user',

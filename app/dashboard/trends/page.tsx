@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { RefreshCw, ArrowRight, Activity, Zap } from 'lucide-react';
+import { getUserSkills } from '@/utils/convex/db';
 import styles from './trends.module.css';
 
 interface Trend {
@@ -20,10 +21,25 @@ export default function TrendsPage() {
     const fetchTrends = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/scrape');
+            // Get user's current skills to personalize the trends
+            const userSkills = await getUserSkills();
+
+            const res = await fetch('/api/scrape', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ skills: userSkills }),
+            });
             const data = await res.json();
-            const currentTrends = data.trends || [];
+            const currentTrends: Trend[] = data.trends || [];
             setTrends(currentTrends);
+
+            // Cache trends so the roadmap page can use them without re-fetching
+            if (currentTrends.length > 0) {
+                localStorage.setItem('skillforge_trends_cache', JSON.stringify({
+                    data: currentTrends,
+                    timestamp: Date.now(),
+                }));
+            }
         } catch {
             console.error("Failed to load trends");
         } finally {
@@ -39,8 +55,8 @@ export default function TrendsPage() {
         <div className={`animate-fade-in ${styles.container}`}>
             <div className={styles.header}>
                 <div>
-                    <h1 className={styles.title}>Live Market Trends</h1>
-                    <p className={styles.subtitle}>Real-time analysis of in-demand skills actively hiring right now.</p>
+                    <h1 className={styles.title}>Personalized Market Trends</h1>
+                    <p className={styles.subtitle}>AI-curated analysis of booming tech skills actively hiring related to your learning focus.</p>
                 </div>
                 <button
                     onClick={fetchTrends}
@@ -48,7 +64,7 @@ export default function TrendsPage() {
                     className={`btn-glass ${styles.refreshBtn}`}
                 >
                     <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
-                    {loading ? 'Scanning...' : 'Scan Market'}
+                    {loading ? 'Analyzing...' : 'Refresh Trends'}
                 </button>
             </div>
 

@@ -1,44 +1,68 @@
 import { NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
 
-const groq = new Groq({
-    apiKey: process.env.GROQ_API_KEY,
-});
+const getGroqKey = () => {
+    const keys = [
+        process.env.GROQ_API_KEY,
+        process.env.GROQ_API_KEY_SECURITY,
+        process.env.GROQ_API_KEY_PERFORMANCE,
+        process.env.GROQ_API_KEY_UX
+    ].filter(Boolean);
+    return keys[Math.floor(Math.random() * keys.length)];
+};
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
+    const groq = new Groq({
+        apiKey: getGroqKey() || process.env.GROQ_API_KEY,
+    });
+
     try {
-        const { project } = await request.json();
+        const body = await req.json();
+        const skills = body.skills || [];
+        const userSkills = Array.isArray(skills) && skills.length > 0 ? skills.join(', ') : 'React, JavaScript';
 
-        if (!project) {
-            return NextResponse.json({ error: 'Project context is required' }, { status: 400 });
-        }
+        const prompt = `You are a chaotic senior software architect generating a "Broken Code Escape Room" to train a junior developer.
 
-        const prompt = `You are a chaotic, lazy, legacy developer committing directly to main.
-    Write a Next.js/React component for this project.
-    Name: ${project.name}
-    Description: ${project.description}
-    
-    CRITICAL RESTRICTION: You MUST intentionally inject the following 3 real-world GitHub-issue-style flaws into the code. Do not write perfect code. Make it look like a real, slightly rushed PR.
-    1. Security Flaw (CWE-798/CWE-312): Hardcode a sensitive token (e.g., const AWS_SECRET_KEY = "AKIAIOSFODNN7EXAMPLE") directly in the component, or place a Supabase service_role key where it shouldn't be.
-    2. Performance Flaw (React Race Condition / Memoization Failure): Create a nasty rendering bottleneck. For example, explicitly omit dependencies in a useEffect causing an infinite fetch loop, or use an expensive, un-memoized calculation inside the main render path.
-    3. Architecture Flaw (The "God Component"): Put everything (styles, data fetching logic, complex layout, nested modals) into one massive >200 line unreadable file without breaking it down into smaller, logical sub-components.
+User's Training Focus: ${userSkills}
 
-    Output ONLY valid TSX code using Lucide React icons. Do not output markdown ticks. Make the UI look somewhat decent so the user is under the illusion it's working code until it breaks or is audited.`;
+Generate ONE highly realistic, incredibly messy file of code (e.g., a React component, a Python script, or an API route based on their skills).
+
+CRUCIAL REQUIREMENT: The code you generate MUST be heavily inspired by a REAL-WORLD software industry disaster, a famous CVE, a known OWASP Top 10 vulnerability, or a documented engineering post-mortem (e.g., the Cloudflare regex catastrophic backtracking, the GitLab database deletion script, an S3 bucket misconfiguration, Log4j-style injection, or a classic race condition in a high-traffic microservice).
+
+The code should attempt to accomplish a realistic task but contain EXACTLY 3 major industry-standard flaws. One of these flaws MUST be the root cause of the famous real-world disaster you chose.
+
+Return ONLY a valid JSON object matching this exact structure:
+{
+  "title": "A witty title for this mission that hints at the real-world disaster (e.g., 'Mission: The Cloudflare Regex Meltdown')",
+  "description": "A 2-3 sentence technical brief explaining what the file does, the chaos within, and explicitly stating which real-world industry problem or CVE this scenario is simulating so the user learns the history of it.",
+  "initialCode": "The full string of flawed source code (around 40-70 lines long. MUST have properly escaped quotes and newlines to be valid JSON). Make it convincingly bad, just like the real incident.",
+  "missions": [
+    "Mission 1: Describe the first flaw to fix (e.g., 'Remove the hardcoded AWS key')",
+    "Mission 2: Describe the second flaw (e.g., 'Fix the catastrophic regex backtracking')",
+    "Mission 3: Describe the third flaw (e.g., 'Refactor the O(N^2) data mapping')"
+  ]
+}`;
 
         const completion = await groq.chat.completions.create({
-            messages: [{ role: 'user', content: prompt }],
+            messages: [
+                { role: 'system', content: 'You generate JSON objects for coding challenges. Return strict JSON.' },
+                { role: 'user', content: prompt }
+            ],
             model: 'llama-3.3-70b-versatile',
-            temperature: 0.7, // higher temp for more chaotic generation
+            response_format: { type: 'json_object' },
+            temperature: 0.8,
         });
 
-        let code = completion.choices[0]?.message?.content || '// Error generating code';
+        const output = completion.choices[0]?.message?.content || '{}';
+        const projectData = JSON.parse(output);
 
-        // Clean up markdown ticks if Llama still includes them
-        code = code.replace(/```(tsx|jsx|ts|js)?\n/g, '').replace(/```/g, '').trim();
+        if (!projectData.initialCode || !projectData.missions) {
+            throw new Error("Invalid format returned from AI.");
+        }
 
-        return NextResponse.json({ code });
+        return NextResponse.json(projectData);
     } catch (error: unknown) {
-        console.error('Groq API Error:', error);
+        console.error('Groq Chaos Engine Error:', error);
         return NextResponse.json({ error: (error instanceof Error ? error.message : String(error)) }, { status: 500 });
     }
 }

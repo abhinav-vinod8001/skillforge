@@ -2,64 +2,85 @@ import { NextResponse } from 'next/server';
 import * as cheerio from 'cheerio';
 import Groq from 'groq-sdk';
 
-const groq = new Groq({
-    apiKey: process.env.GROQ_API_KEY,
-});
+// Helper to distribute load across available keys
+const getGroqKey = () => {
+    const keys = [
+        process.env.GROQ_API_KEY,
+        process.env.GROQ_API_KEY_SECURITY,
+        process.env.GROQ_API_KEY_PERFORMANCE,
+        process.env.GROQ_API_KEY_UX
+    ].filter(Boolean);
+    return keys[Math.floor(Math.random() * keys.length)];
+};
 
-export async function GET() {
+export async function POST(req: Request) {
+    const groq = new Groq({
+        apiKey: getGroqKey() || process.env.GROQ_API_KEY,
+    });
+
     try {
-        // 1. Scrape a public tech news site (HackerNews as proxy for market trends)
-        // In a production app, we would scrape LinkedIn/Reddit or use an API aggregator.
-        const response = await fetch('https://news.ycombinator.com/', { cache: 'no-store' });
-        const html = await response.text();
-        const $ = cheerio.load(html);
+        const body = await req.json();
+        const skills: string[] = body.skills || [];
 
-        const headlines: string[] = [];
-        $('.titleline > a').each((_, element) => {
-            headlines.push($(element).text());
-        });
+        if (skills.length === 0) {
+            return NextResponse.json({
+                trends: [
+                    { skill_name: "Agentic AI", growth_percentage: 42, demand_level: "High", context: "Booming in predictive analytics" },
+                    { skill_name: "Go (Golang)", growth_percentage: 28, demand_level: "High", context: "Cloud-native microservices" },
+                    { skill_name: "DevSecOps", growth_percentage: 35, demand_level: "Medium", context: "Security left-shifting trends" },
+                    { skill_name: "Quantum Computing", growth_percentage: 15, demand_level: "Low", context: "Emerging niche research" }
+                ]
+            });
+        }
 
-        // 2. Pass headlines to Groq to extract trending tech skills and spoof some "growth" stats
-        const prompt = `Analyze these recent tech headlines:\n\n${headlines.slice(0, 30).join('\n')}\n\nExtract 4-6 booming tech skills or trends (e.g., "Agentic AI", "Rust", "DevSecOps"). Return strictly a JSON array of objects with these keys: "skill_name", "growth_percentage" (random realistic number 10-80), "demand_level" ("High", "Medium"), "context" (a short 5-word reason why it's trending based on the headlines or general knowledge).`;
+        const prompt = `Act as an expert career advisor and tech industry analyst.
+The user is currently studying the following curriculum/skills:
+${skills.join(', ')}
+
+Analyze these topics and identify 4-6 highly specific, booming technologies or market trends that are DIRECTLY RELATED to these subjects. 
+For example, if they are studying "Python" and "Data Analysis", a booming trend might be "LLM Fine-tuning" or "RAG systems".
+Do not suggest generic trends; they must be personalized and highly relevant to the provided curriculum.
+
+Return strictly a JSON array of objects with the following keys:
+- "skill_name": The specific name of the booming skill/technology.
+- "growth_percentage": A realistic estimated YoY growth percentage (number between 10 and 80).
+- "demand_level": Either "High" or "Medium".
+- "context": A short, 5-10 word explanation of why this specific skill is trending in relation to their curriculum.`;
 
         const completion = await groq.chat.completions.create({
             messages: [{ role: 'user', content: prompt }],
             model: 'llama-3.3-70b-versatile',
             response_format: { type: 'json_object' },
+            temperature: 0.7,
         });
 
         const output = completion.choices[0]?.message?.content || '{"trends": []}';
         let data;
         try {
             data = JSON.parse(output);
-            // Normalize array vs object root
             if (!data.trends && Array.isArray(data)) {
                 data = { trends: data };
             } else if (!data.trends && Object.keys(data).length > 0) {
-                // Failsafe if it returned an object with a different key
                 const firstKey = Object.keys(data)[0];
                 data = { trends: data[firstKey] };
             }
         } catch {
             data = {
                 trends: [
-                    { skill_name: "Agentic AI", growth_percentage: 45, demand_level: "High", context: "High demand in enterprise automation" },
-                    { skill_name: "Rust", growth_percentage: 30, demand_level: "Medium", context: "Systems programming safety" }
+                    { skill_name: "Advanced " + skills[0], growth_percentage: 40, demand_level: "High", context: "Deepening core competencies" },
+                    { skill_name: "Applied " + (skills[1] || "AI"), growth_percentage: 35, demand_level: "Medium", context: "Practical industry applications" }
                 ]
             };
         }
 
         return NextResponse.json(data);
     } catch (error: unknown) {
-        console.error('Scraping Error:', error);
-        // Fallback data in case of scraping failures
+        console.error('Trend Generation Error:', error);
         return NextResponse.json({
             trends: [
-                { skill_name: "Agentic AI", growth_percentage: 42, demand_level: "High", context: "Booming in predictive analytics" },
-                { skill_name: "Go (Golang)", growth_percentage: 28, demand_level: "High", context: "Cloud-native microservices" },
-                { skill_name: "DevSecOps", growth_percentage: 35, demand_level: "Medium", context: "Security left-shifting trends" },
-                { skill_name: "Quantum Computing", growth_percentage: 15, demand_level: "Low", context: "Emerging niche research" }
+                { skill_name: "Cloud Native Architecture", growth_percentage: 38, demand_level: "High", context: "Standard for modern applications" },
+                { skill_name: "Data Engineering", growth_percentage: 42, demand_level: "High", context: "Foundation for AI/ML" }
             ]
-        });
+        }, { status: 500 });
     }
 }

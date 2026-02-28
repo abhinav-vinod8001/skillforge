@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Clock, Flag, Briefcase } from 'lucide-react';
+import { saveSimulatorLog } from '@/utils/convex/db';
 import styles from './simulator.module.css';
 import StandupModal from './StandupModal';
 import TicketBoard, { Ticket } from './TicketBoard';
@@ -130,7 +131,7 @@ export default function SimulatorPage() {
                 // End simulation
                 let parsed: Record<string, unknown> = { metrics: { score: 70, bugs_resolved: 0, efficiency: 'N/A' } };
                 try { parsed = JSON.parse(data.content); } catch { }
-                setBaseMetrics(parsed.metrics || { score: 70 });
+                setBaseMetrics((parsed.metrics as Record<string, string | number>) || { score: 70 });
                 setIsActive(false);
                 setPhase('retro');
             } else {
@@ -192,7 +193,7 @@ export default function SimulatorPage() {
             const data = await res.json();
             let parsed: Record<string, unknown> = { metrics: { score: 70, bugs_resolved: 0, efficiency: 'N/A' } };
             try { parsed = JSON.parse(data.content); } catch { }
-            setBaseMetrics(parsed.metrics || { score: 70 });
+            setBaseMetrics((parsed.metrics as Record<string, string | number>) || { score: 70 });
             setIsActive(false);
             setPhase('retro');
         } catch {
@@ -210,13 +211,13 @@ export default function SimulatorPage() {
         setIsActive(true);
     };
 
-    const handleRetroComplete = (finalMetrics: Record<string, number | string>) => {
-        localStorage.setItem('skillforge_log', JSON.stringify({
+    const handleRetroComplete = async (finalMetrics: Record<string, number | string>) => {
+        await saveSimulatorLog({
             skill_focus: 'Full Stack Development',
             score: finalMetrics.score || 0,
             metrics: finalMetrics,
             completed_at: new Date().toISOString(),
-        }));
+        });
         router.push('/dashboard/export');
     };
 

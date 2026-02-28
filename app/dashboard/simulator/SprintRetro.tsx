@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import styles from './simulator.module.css';
 
 interface SprintRetroProps {
-    baseMetrics: Record<string, number | string>;
+    baseMetrics: Record<string, number | string> | null;
     standupScore: number;
     ticketsCompleted: number;
     onComplete: (finalMetrics: Record<string, number | string>) => void;
@@ -17,7 +17,7 @@ export default function SprintRetro({ baseMetrics, standupScore, ticketsComplete
     const [challenging, setChallenging] = useState('');
     const [doDifferently, setDoDifferently] = useState('');
     const [loading, setLoading] = useState(false);
-    const [retroResult, setRetroResult] = useState<Record<string, unknown> | null>(null);
+    const [retroResult, setRetroResult] = useState<{ parsed: any, finalMetrics: any } | null>(null);
 
     const handleSubmit = async () => {
         if (!wentWell.trim() || !challenging.trim() || !doDifferently.trim()) return;
@@ -34,11 +34,11 @@ export default function SprintRetro({ baseMetrics, standupScore, ticketsComplete
                 }),
             });
             const data = await res.json();
-            let parsed: Record<string, number | string> = { self_awareness: 7, growth_mindset: 7, specificity: 7, total: 21, feedback: 'Good retrospective.' };
+            let parsed: { total?: number; self_awareness?: number; growth_mindset?: number; specificity?: number; feedback?: string } = { self_awareness: 7, growth_mindset: 7, specificity: 7, total: 21, feedback: 'Good retrospective.' };
             try { parsed = JSON.parse(data.content); } catch { }
 
             // Calculate combined final score
-            const technicalScore = baseMetrics?.score || 70;
+            const technicalScore = (baseMetrics?.score as number) || 70;
             const retroScore = parsed.total || 21;
             const combinedScore = Math.round(
                 (technicalScore * 0.5) + (retroScore * 1.0) + (standupScore * 0.3) + (ticketsCompleted * 3)
@@ -60,7 +60,7 @@ export default function SprintRetro({ baseMetrics, standupScore, ticketsComplete
         } catch {
             const fallbackMetrics = {
                 ...baseMetrics,
-                score: baseMetrics?.score || 70,
+                score: (baseMetrics?.score as number) || 70,
                 standup_score: standupScore,
                 tickets_completed: ticketsCompleted,
             };
@@ -81,7 +81,7 @@ export default function SprintRetro({ baseMetrics, standupScore, ticketsComplete
                 <Trophy size={48} className="text-gradient" style={{ margin: '0 auto 1.5rem', display: 'block' }} />
                 <h2>Sprint Complete</h2>
                 <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
-                    {parsed.feedback}
+                    {parsed.feedback || 'Good work!'}
                 </p>
 
                 <div className={styles.retroScoreGrid}>

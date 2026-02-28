@@ -1,14 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
+import { useEffect } from 'react';
+import { SignedIn, SignedOut, UserButton, SignInButton, useUser } from '@clerk/nextjs';
 import {
     Sparkles,
     Map,
     TrendingUp,
     Briefcase,
     FolderGit2,
-    LogOut,
     UploadCloud,
     TerminalSquare,
     Home,
@@ -22,12 +23,18 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     const pathname = usePathname();
-    const router = useRouter();
+    const { user, isSignedIn } = useUser();
 
-    const handleLogout = async () => {
-        // Auth removed entirely
-        router.push('/');
-    };
+    // Sync Clerk user → localStorage so db.ts can use the userId for Convex
+    useEffect(() => {
+        if (isSignedIn && user) {
+            localStorage.setItem('praxis_user', JSON.stringify({
+                id: user.id,
+                email: user.primaryEmailAddress?.emailAddress || '',
+                name: user.fullName || user.firstName || 'User',
+            }));
+        }
+    }, [isSignedIn, user]);
 
     const navItems = [
         { label: 'Home', icon: Home, href: '/dashboard' },
@@ -69,10 +76,24 @@ export default function DashboardLayout({
                 </nav>
 
                 <div className={styles.userSection}>
-                    <button className={styles.logoutBtn} onClick={handleLogout}>
-                        <LogOut size={20} />
-                        <span>Sign Out</span>
-                    </button>
+                    <SignedIn>
+                        <UserButton
+                            afterSignOutUrl="/"
+                            appearance={{
+                                elements: {
+                                    avatarBox: { width: 36, height: 36 },
+                                },
+                            }}
+                        />
+                    </SignedIn>
+                    <SignedOut>
+                        <SignInButton mode="redirect">
+                            <button className={styles.logoutBtn}>
+                                <User size={20} />
+                                <span>Sign In</span>
+                            </button>
+                        </SignInButton>
+                    </SignedOut>
                 </div>
             </aside>
 

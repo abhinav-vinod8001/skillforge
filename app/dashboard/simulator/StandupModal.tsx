@@ -14,7 +14,7 @@ export default function StandupModal({ onComplete }: StandupModalProps) {
     const [today, setToday] = useState('');
     const [blockers, setBlockers] = useState('');
     const [loading, setLoading] = useState(false);
-    const [feedback, setFeedback] = useState<Record<string, unknown> | null>(null);
+    const [feedback, setFeedback] = useState<any | null>(null);
 
     const handleSubmit = async () => {
         if (!yesterday.trim() || !today.trim()) return;
@@ -31,7 +31,7 @@ export default function StandupModal({ onComplete }: StandupModalProps) {
                 }),
             });
             const data = await res.json();
-            let parsed: Record<string, unknown> = { passed: true, score: 20, feedback: 'Good standup!' };
+            let parsed: any = { passed: true, score: 20, feedback: 'Good standup!' };
             try { parsed = JSON.parse(data.content); } catch { }
             setFeedback(parsed);
         } catch {

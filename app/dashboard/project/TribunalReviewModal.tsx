@@ -7,19 +7,21 @@ import { useRouter } from 'next/navigation';
 
 interface AgentResult {
     agent: string;
-    passed: boolean;
-    feedback: string;
+    comment: string;
 }
 
 interface TribunalReviewModalProps {
     code: string;
+    originalCode: string;
+    missions: string[];
     onClose: () => void;
     onNext: () => void;
     isLast: boolean;
 }
 
-export default function TribunalReviewModal({ code, onClose, onNext, isLast }: TribunalReviewModalProps) {
+export default function TribunalReviewModal({ code, originalCode, missions, onClose, onNext, isLast }: TribunalReviewModalProps) {
     const [results, setResults] = useState<AgentResult[] | null>(null);
+    const [mainFeedback, setMainFeedback] = useState('');
     const [loading, setLoading] = useState(true);
     const [overallPassed, setOverallPassed] = useState(false);
     const router = useRouter();
@@ -35,23 +37,24 @@ export default function TribunalReviewModal({ code, onClose, onNext, isLast }: T
             const res = await fetch('/api/tribunal-review', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code })
+                body: JSON.stringify({ submittedCode: code, originalCode, missions })
             });
             const data = await res.json();
-            setResults(data.tribunal);
+            setResults(data.agent_comments || []);
             setOverallPassed(data.passed);
+            setMainFeedback(data.feedback || '');
         } catch (e) {
             console.error(e);
-            setResults([{ agent: 'System', passed: false, feedback: 'Tribunal disconnected. Check your connection.' }]);
+            setResults([{ agent: 'System', comment: 'Tribunal disconnected. Check your connection.' }]);
         } finally {
             setLoading(false);
         }
     };
 
     const getAgentIcon = (agent: string) => {
-        if (agent === 'Security') return <ShieldAlert size={24} />;
-        if (agent === 'Performance') return <Cpu size={24} />;
-        if (agent === 'UX') return <Palette size={24} />;
+        if (agent.includes('Security')) return <ShieldAlert size={24} />;
+        if (agent.includes('Performance')) return <Cpu size={24} />;
+        if (agent.includes('Architecture') || agent.includes('UX')) return <Palette size={24} />;
         return <ShieldCheck size={24} />;
     };
 
@@ -86,35 +89,45 @@ export default function TribunalReviewModal({ code, onClose, onNext, isLast }: T
                         </div>
                     ) : (
                         <>
-                            {results?.map((result, idx) => (
-                                <motion.div
-                                    key={idx}
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: idx * 0.2 }}
-                                    style={{
-                                        padding: '1.5rem',
-                                        borderRadius: 'var(--radius-md)',
-                                        background: result.passed ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                                        border: `1px solid ${result.passed ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
-                                        display: 'flex',
-                                        gap: '1.5rem',
-                                        alignItems: 'flex-start'
-                                    }}
-                                >
-                                    <div style={{ color: result.passed ? '#34d399' : '#fca5a5', padding: '0.5rem', background: 'rgba(0,0,0,0.2)', borderRadius: '50%' }}>
-                                        {getAgentIcon(result.agent)}
-                                    </div>
-                                    <div>
-                                        <h3 style={{ fontSize: '1.125rem', marginBottom: '0.25rem', color: result.passed ? '#34d399' : '#fca5a5', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                            {result.agent} Lead {result.passed ? <CheckCircle2 size={16} /> : <X size={16} />}
-                                        </h3>
-                                        <p style={{ color: 'var(--text-primary)', lineHeight: 1.5 }}>
-                                            &ldquo;{result.feedback}&rdquo;
-                                        </p>
-                                    </div>
-                                </motion.div>
-                            ))}
+                            {mainFeedback && (
+                                <div style={{ marginBottom: '1rem', padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', fontStyle: 'italic' }}>
+                                    &ldquo;{mainFeedback}&rdquo;
+                                </div>
+                            )}
+
+                            {results?.map((result, idx) => {
+                                // Simple text analysis to determine pass/fail for the UI coloring if missing explicit boolean array, but since UI only needed red/green, let's just use overallPassed logic or simplistic checks. Actually the prompt says if passed it contains "Passed" or "Failed".
+                                const passedAgent = result.comment.includes('Passed');
+                                return (
+                                    <motion.div
+                                        key={idx}
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: idx * 0.2 }}
+                                        style={{
+                                            padding: '1.5rem',
+                                            borderRadius: 'var(--radius-md)',
+                                            background: passedAgent ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                            border: `1px solid ${passedAgent ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+                                            display: 'flex',
+                                            gap: '1.5rem',
+                                            alignItems: 'flex-start'
+                                        }}
+                                    >
+                                        <div style={{ color: passedAgent ? '#34d399' : '#fca5a5', padding: '0.5rem', background: 'rgba(0,0,0,0.2)', borderRadius: '50%' }}>
+                                            {getAgentIcon(result.agent)}
+                                        </div>
+                                        <div>
+                                            <h3 style={{ fontSize: '1.125rem', marginBottom: '0.25rem', color: passedAgent ? '#34d399' : '#fca5a5', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                {result.agent} Lead {passedAgent ? <CheckCircle2 size={16} /> : <X size={16} />}
+                                            </h3>
+                                            <p style={{ color: 'var(--text-primary)', lineHeight: 1.5 }}>
+                                                &ldquo;{result.comment}&rdquo;
+                                            </p>
+                                        </div>
+                                    </motion.div>
+                                );
+                            })}
 
                             <div style={{ marginTop: '2rem', textAlign: 'center' }}>
                                 {overallPassed ? (
@@ -122,7 +135,7 @@ export default function TribunalReviewModal({ code, onClose, onNext, isLast }: T
                                         <h3 style={{ fontSize: '1.5rem', color: '#34d399', marginBottom: '1rem' }}>Verdict: Passed. Outstanding work.</h3>
                                         {!isLast ? (
                                             <button onClick={onNext} className="btn-primary" style={{ background: '#10b981', boxShadow: '0 4px 15px rgba(16, 185, 129, 0.4)' }}>
-                                                Next Problem
+                                                Next Mission
                                             </button>
                                         ) : (
                                             <button onClick={() => router.push('/dashboard/export')} className="btn-primary" style={{ background: '#10b981', boxShadow: '0 4px 15px rgba(16, 185, 129, 0.4)' }}>

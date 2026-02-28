@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Download, Award, ShieldCheck, CheckCircle2, Loader2 } from 'lucide-react';
+import { getSimulatorLog } from '@/utils/convex/db';
 import styles from './export.module.css';
 
 interface LogData {
@@ -28,11 +29,10 @@ export default function ExportPage() {
 
     const fetchLatestLog = async () => {
         setLoading(true);
-        // Bypassing auth: Setting a default name
         setUserName('Guest Builder');
 
-        const stored = localStorage.getItem('skillforge_log');
-        if (stored) setLog(JSON.parse(stored));
+        const stored = await getSimulatorLog();
+        if (stored) setLog(stored as any);
         setLoading(false);
     };
 

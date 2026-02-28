@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { UploadCloud, FileText, Loader2, CheckCircle2 } from 'lucide-react';
 import * as pdfjsLibTypes from 'pdfjs-dist';
+import { saveSkills } from '@/utils/convex/db';
 import styles from './onboarding.module.css';
 
 // Use a type string or any for pdfjsLib since it will be loaded dynamically
@@ -20,7 +21,7 @@ export default function OnboardingPage() {
     const [file, setFile] = useState<File | null>(null);
     const [textInput, setTextInput] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
-    const [result, setResult] = useState<{skills: string[]} | null>(null);
+    const [result, setResult] = useState<{ skills: string[] } | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     const router = useRouter();
@@ -34,7 +35,7 @@ export default function OnboardingPage() {
         for (let i = 1; i <= pdf.numPages; i++) {
             const page = await pdf.getPage(i);
             const textContent = await page.getTextContent();
-            const pageText = textContent.items.map((item: {str: string}) => item.str).join(' ');
+            const pageText = textContent.items.filter((item) => 'str' in item).map((item) => (item as { str: string }).str).join(' ');
             fullText += pageText + ' ';
         }
         return fullText;
@@ -73,12 +74,15 @@ export default function OnboardingPage() {
                 body: JSON.stringify({ text: syllabusText.substring(0, 15000) }) // limit size
             });
 
-            if (!res.ok) throw new Error("Failed to analyze syllabus");
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.error || "Failed to analyze syllabus");
+            }
 
             const data = await res.json();
 
-            // Save to LocalStorage for offline testing
-            localStorage.setItem('skillforge_skills', JSON.stringify(data.skills));
+            // Save to Appwrite Database (with localStorage fallback)
+            await saveSkills(data.skills);
 
             setResult(data);
         } catch (err: unknown) {
