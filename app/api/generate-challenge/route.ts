@@ -16,19 +16,18 @@ export async function POST(req: Request) {
 
     try {
         const body = await req.json();
-        const skills = body.skills || [];
-        const userSkills = Array.isArray(skills) && skills.length > 0 ? skills.join(', ') : 'React, JavaScript, Python';
+        const { syllabus } = body;
+        const syllabusString = syllabus && Object.keys(syllabus).length > 0 ? JSON.stringify(syllabus).substring(0, 1000) : 'General Technology';
 
-        const prompt = `You are an expert prompt engineering instructor generating a personalized challenge for a student.
+        const prompt = `You are an elite AI Prompt Engineering gamification engine.
+The user is training on a strict engineering syllabus: ${syllabusString}
 
-The student's skills and interests: ${userSkills}
+Generate a unique 1-step prompt engineering workplace scenario perfectly tailored ONLY for the topics in this Syllabus.
 
-Generate ONE prompt engineering challenge scenario that is DIRECTLY relevant to their skills and career path. The challenge should teach them how to write effective AI prompts for real-world tasks in their domain.
-
-For example:
-- If they know Python/ML → generate a challenge about prompting an AI to debug ML pipelines or summarize research papers.
-- If they know React/Frontend → generate a challenge about prompting an AI to review UI components or generate accessible HTML.
-- If they know Node/Backend → generate a challenge about prompting an AI to write API documentation or optimize database queries.
+Guidelines:
+- If the syllabus focuses on React/Frontend → generate a challenge about prompting an AI to review UI components.
+- If it focuses on Backend/Database → generate a challenge about writing database constraints or optimizing queries.
+- Do NOT generate generic questions. Tie the scenario directly to one of their specific syllabus nodes!
 
 OUTPUT FORMAT: Wrap your response in these exact XML tags. Do NOT use JSON or markdown.
 

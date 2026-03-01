@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Trophy, ChevronRight, Zap, Star, Lock, Target, RotateCcw, Send, AlertCircle, CheckCircle, Clock, RefreshCw, Sparkles } from 'lucide-react';
-import { getProgress, savePromptProgress, getBadges, saveBadges, getUserSkills } from '@/utils/convex/db';
+import { getProgress, savePromptProgress, getBadges, saveBadges, getSyllabus } from '@/utils/convex/db';
 import styles from './scenario.module.css';
 
 // ─── FALLBACK CHALLENGE DATA ─────────────────────────────────────────── //
@@ -115,13 +115,13 @@ export default function ScenarioChallenge() {
     const fetchPersonalizedChallenges = useCallback(async () => {
         setIsLoadingPersonalized(true);
         try {
-            const skills = await getUserSkills();
+            const syllabus = await getSyllabus();
             // Fetch 3 personalized challenges in parallel
             const promises = Array.from({ length: 3 }, () =>
                 fetch('/api/generate-challenge', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ skills })
+                    body: JSON.stringify({ syllabus })
                 }).then(r => r.ok ? r.json() : null).catch(() => null)
             );
             const results = await Promise.all(promises);
@@ -144,7 +144,7 @@ export default function ScenarioChallenge() {
         const loadData = async () => {
             try {
                 const { promptProgress } = await getProgress();
-                if (Object.keys(promptProgress).length > 0) setProgress(promptProgress as any);
+                if (Object.keys(promptProgress).length > 0) setProgress(promptProgress as Progress);
                 const badges = await getBadges();
                 if (badges.length > 0) setEarnedBadges(badges);
             } catch { }
@@ -389,6 +389,10 @@ export default function ScenarioChallenge() {
                             value={promptInput}
                             onChange={e => setPromptInput(e.target.value)}
                             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleEvaluate(); } }}
+                            onPaste={e => {
+                                e.preventDefault();
+                                alert('⛔ Cheat Prevention: Copy-pasting is strictly disabled in the Prompt Engineering Lab. You must write your prompt manually.');
+                            }}
                             disabled={isEvaluating}
                             autoFocus
                         />

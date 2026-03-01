@@ -14,8 +14,12 @@ import {
     Award,
     Lock,
     BarChart3,
+    FileBadge,
+    AlertTriangle,
+    CheckCircle2
 } from 'lucide-react';
-import { getProgress, getBadges, getSkills, getSimulatorLog, saveBadges } from '@/utils/convex/db';
+import { getProgress, getBadges, getSkills, getSimulatorLog, saveBadges, resetAccount } from '@/utils/convex/db';
+import { useRouter } from 'next/navigation';
 import styles from './profile.module.css';
 
 // ─── LEVEL SYSTEM ──────────────────────────────────────── //
@@ -63,8 +67,23 @@ export default function ProfilePage() {
     const [earnedBadges, setEarnedBadges] = useState<string[]>([]);
     const [skills, setSkills] = useState<string[]>([]);
     const [simCompleted, setSimCompleted] = useState(false);
+    const [allModulesCompleted, setAllModulesCompleted] = useState(false);
     const [activities, setActivities] = useState<{ text: string; label: string }[]>([]);
     const [promptProgress, setPromptProgress] = useState<Record<string, { bestScore: number; attempts: number; completed: boolean }>>({});
+    const [isResetting, setIsResetting] = useState(false);
+    const router = useRouter();
+
+    const handleReset = async () => {
+        if (!confirm("Are you sure you want to completely wipe your account progress? This cannot be undone.")) return;
+        setIsResetting(true);
+        try {
+            await resetAccount();
+            router.push('/dashboard/onboarding');
+        } catch (e) {
+            console.error(e);
+            setIsResetting(false);
+        }
+    };
 
     useEffect(() => {
         const loadProfile = async () => {
@@ -81,8 +100,15 @@ export default function ProfilePage() {
                 const activityLog: { text: string; label: string }[] = [];
 
                 // Forge + Prompt progress
-                const { forgeLevel: forgeLvl, promptProgress: pp } = await getProgress();
+                const { forgeLevel: forgeLvl, promptProgress: pp, completedModules } = await getProgress();
                 setForgeLevel(forgeLvl);
+
+                const sysSyl = await getSyllabus() as Record<string, unknown> | null;
+                if (sysSyl && sysSyl.nodes && Array.isArray(sysSyl.nodes)) {
+                    if (completedModules && Array.isArray(completedModules) && completedModules.length >= sysSyl.nodes.length) {
+                        setAllModulesCompleted(true);
+                    }
+                }
                 xp += forgeLvl * 50;
                 for (let i = 1; i <= forgeLvl; i++) {
                     activityLog.push({
@@ -92,7 +118,7 @@ export default function ProfilePage() {
                 }
 
                 if (Object.keys(pp).length > 0) {
-                    setPromptProgress(pp as any);
+                    setPromptProgress(pp as Record<string, { bestScore: number; attempts: number; completed: boolean; }>);
                     let challenges = 0;
                     let attempts = 0;
                     let best = 0;
@@ -122,9 +148,18 @@ export default function ProfilePage() {
                 // Sim results
                 const simLog = await getSimulatorLog();
                 if (simLog) {
-                    setSimCompleted(true);
-                    if (!badgeList.includes('sim-complete')) badgeList.push('sim-complete');
-                    activityLog.push({ text: 'Completed Intern Simulation', label: 'Simulator' });
+                    let logScore = 0;
+                    try {
+                        const logString = (simLog as Record<string, unknown>).logData as string;
+                        const parsedLog = JSON.parse(logString);
+                        logScore = parsedLog.score || 0;
+                    } catch { }
+
+                    if (logScore >= 70) {
+                        setSimCompleted(true);
+                        if (!badgeList.includes('sim-complete')) badgeList.push('sim-complete');
+                    }
+                    activityLog.push({ text: `Internship Attempt (Score: ${logScore})`, label: 'Simulator' });
                 }
 
                 // Skills
@@ -249,6 +284,89 @@ export default function ProfilePage() {
                             Upload your syllabus in Onboarding to see your skills here.
                         </p>
                     )}
+                </div>
+            </div>
+
+            {/* ─── CERTIFICATION ─────────────────────────────── */}
+            <div className={styles.section}>
+                <div className={styles.sectionTitle}>
+                    <FileBadge size={18} color="#d2a8ff" />
+                    Official Certification
+                </div>
+                <div className="glass-panel" style={{ padding: '2rem' }}>
+                    <p style={{ marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>
+                        To earn your Praxis AI Architect Certification, you must prove your mastery across all domains.
+                    </p>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+                        <div className={styles.statCard} style={{ opacity: totalXP >= 500 ? 1 : 0.5 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                {totalXP >= 500 ? <CheckCircle2 size={16} color="#3fb950" /> : <Lock size={16} />}
+                                <strong>Level Up</strong>
+                            </div>
+                            <span className={styles.statLabel}>Reach Engineer Level (500 XP)</span>
+                        </div>
+                        <div className={styles.statCard} style={{ opacity: forgeLevel >= 3 ? 1 : 0.5 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                {forgeLevel >= 3 ? <CheckCircle2 size={16} color="#3fb950" /> : <Lock size={16} />}
+                                <strong>Forge Master</strong>
+                            </div>
+                            <span className={styles.statLabel}>Complete 3+ Missions</span>
+                        </div>
+                        <div className={styles.statCard} style={{ opacity: promptChallengesDone >= 3 ? 1 : 0.5 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                {promptChallengesDone >= 3 ? <CheckCircle2 size={16} color="#3fb950" /> : <Lock size={16} />}
+                                <strong>Prompt Expert</strong>
+                            </div>
+                            <span className={styles.statLabel}>Complete 3+ Challenges</span>
+                        </div>
+                        <div className={styles.statCard} style={{ opacity: allModulesCompleted ? 1 : 0.5 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                {allModulesCompleted ? <CheckCircle2 size={16} color="#3fb950" /> : <Lock size={16} />}
+                                <strong>Theory Scholar</strong>
+                            </div>
+                            <span className={styles.statLabel}>Complete all Roadmap Modules</span>
+                        </div>
+                        <div className={styles.statCard} style={{ opacity: simCompleted ? 1 : 0.5 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                {simCompleted ? <CheckCircle2 size={16} color="#3fb950" /> : <Lock size={16} />}
+                                <strong>Intern Survivor</strong>
+                            </div>
+                            <span className={styles.statLabel}>Clear the Simulator (70+ Req)</span>
+                        </div>
+                    </div>
+
+                    {(totalXP >= 500 && forgeLevel >= 3 && promptChallengesDone >= 3 && simCompleted && allModulesCompleted) ? (
+                        <button className="btn-primary" style={{ width: '100%' }} onClick={() => router.push('/dashboard/export')}>
+                            Download Official Certificate
+                        </button>
+                    ) : (
+                        <button className="btn-secondary" style={{ width: '100%', opacity: 0.5, cursor: 'not-allowed' }} disabled>
+                            Criteria Not Met
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* ─── DANGER ZONE ───────────────────────────────── */}
+            <div className={styles.section} style={{ marginTop: '3rem' }}>
+                <div className={styles.sectionTitle} style={{ color: '#da3633' }}>
+                    <AlertTriangle size={18} />
+                    Danger Zone
+                </div>
+                <div className="glass-panel" style={{ padding: '2rem', border: '1px solid rgba(218, 54, 51, 0.3)' }}>
+                    <h3 style={{ marginBottom: '0.5rem' }}>Reset Career Trajectory</h3>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+                        Need to learn a completely new technology? This will permanently wipe your syllabus, roadmap, XP, and all completed projects from the system, allowing you to start fresh without creating a new account.
+                    </p>
+                    <button
+                        className="btn-primary"
+                        style={{ background: 'rgba(218, 54, 51, 0.1)', color: '#da3633', border: '1px solid rgba(218, 54, 51, 0.4)' }}
+                        onClick={handleReset}
+                        disabled={isResetting}
+                    >
+                        {isResetting ? 'Purging Systems...' : 'Wipe Account Progress'}
+                    </button>
                 </div>
             </div>
 

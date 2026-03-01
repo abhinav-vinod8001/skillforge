@@ -215,6 +215,10 @@ export default function PromptLabPage() {
                                     value={input}
                                     onChange={e => setInput(e.target.value)}
                                     onKeyDown={handleKeyDown}
+                                    onPaste={e => {
+                                        e.preventDefault();
+                                        alert('⛔ Cheat Prevention: Copy-pasting is strictly disabled in the Prompt Engineering Lab. You must write your prompt manually.');
+                                    }}
                                     disabled={isLoading}
                                 />
                                 <button className={styles.sendBtn} onClick={handleSend} disabled={!input.trim() || isLoading}>

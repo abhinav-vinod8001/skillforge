@@ -9,12 +9,21 @@ interface StandupModalProps {
     onComplete: (score: number) => void;
 }
 
+interface StandupFeedback {
+    passed: boolean;
+    score: number;
+    feedback: string;
+    clarity?: number;
+    realism?: number;
+    communication?: number;
+}
+
 export default function StandupModal({ onComplete }: StandupModalProps) {
     const [yesterday, setYesterday] = useState('');
     const [today, setToday] = useState('');
     const [blockers, setBlockers] = useState('');
     const [loading, setLoading] = useState(false);
-    const [feedback, setFeedback] = useState<any | null>(null);
+    const [feedback, setFeedback] = useState<StandupFeedback | null>(null);
 
     const handleSubmit = async () => {
         if (!yesterday.trim() || !today.trim()) return;
@@ -31,8 +40,8 @@ export default function StandupModal({ onComplete }: StandupModalProps) {
                 }),
             });
             const data = await res.json();
-            let parsed: any = { passed: true, score: 20, feedback: 'Good standup!' };
-            try { parsed = JSON.parse(data.content); } catch { }
+            let parsed: StandupFeedback = { passed: true, score: 20, feedback: 'Good standup!' };
+            try { parsed = JSON.parse(data.content) as StandupFeedback; } catch { }
             setFeedback(parsed);
         } catch {
             setFeedback({ passed: true, score: 20, feedback: 'Evaluation failed. Proceeding to workspace.' });

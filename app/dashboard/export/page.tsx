@@ -32,7 +32,7 @@ export default function ExportPage() {
         setUserName('Guest Builder');
 
         const stored = await getSimulatorLog();
-        if (stored) setLog(stored as any);
+        if (stored) setLog(stored as unknown as LogData);
         setLoading(false);
     };
 
@@ -82,10 +82,30 @@ export default function ExportPage() {
                     <h1 className={styles.title}>Export Proof of Work</h1>
                     <p className={styles.subtitle}>Download your cryptographically verified signal for recruiters.</p>
                 </div>
-                <button className="btn-primary" onClick={handleExport} disabled={exporting}>
-                    {exporting ? <Loader2 className="animate-spin" size={18} /> : <Download size={18} />}
-                    {exporting ? 'Generating PDF...' : 'Download Certificate PDF'}
-                </button>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                    <input
+                        type="text"
+                        placeholder="Enter your Official Name..."
+                        value={userName === 'Guest Builder' ? '' : userName}
+                        onChange={(e) => setUserName(e.target.value)}
+                        className={styles.nameInput}
+                        maxLength={40}
+                        style={{
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            border: '1px solid var(--border-color)',
+                            padding: '0.65rem 1rem',
+                            borderRadius: '8px',
+                            color: 'white',
+                            fontSize: '0.95rem',
+                            width: '260px',
+                            outline: 'none'
+                        }}
+                    />
+                    <button className="btn-primary" onClick={handleExport} disabled={exporting || !userName.trim() || userName === 'Guest Builder'}>
+                        {exporting ? <Loader2 className="animate-spin" size={18} /> : <Download size={18} />}
+                        {exporting ? 'Generating PDF...' : 'Download Certificate PDF'}
+                    </button>
+                </div>
             </div>
 
             <div className={styles.certificateWrapper}>

@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { SignedIn, SignedOut, UserButton, SignInButton, useUser } from '@clerk/nextjs';
+import { getSyllabus } from '@/utils/convex/db';
 import {
     Sparkles,
     Map,
@@ -23,6 +24,7 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     const pathname = usePathname();
+    const router = useRouter();
     const { user, isSignedIn, isLoaded } = useUser();
 
     // Sync Clerk user → localStorage so db.ts can use the userId for Convex
@@ -68,7 +70,16 @@ export default function DashboardLayout({
             // User signed out, clear everything
             clearLocalData();
         }
-    }, [isSignedIn, user, isLoaded]);
+
+        // Anti-skip Guard: Force new users to Get Started if they have no Syllabus
+        if (isSignedIn && isLoaded && pathname !== '/dashboard/onboarding') {
+            getSyllabus().then(syllabus => {
+                if (!syllabus) {
+                    router.push('/dashboard/onboarding');
+                }
+            });
+        }
+    }, [isSignedIn, user, isLoaded, pathname, router]);
 
     const navItems = [
         { label: 'Home', icon: Home, href: '/dashboard' },

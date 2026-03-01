@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, Sparkles, TrendingUp, Briefcase } from 'lucide-react';
+import { ArrowRight, Sparkles, BrainCircuit, Briefcase, ShieldAlert, Rocket } from 'lucide-react';
 import styles from './page.module.css';
 
 export default function Home() {
@@ -24,29 +24,34 @@ export default function Home() {
             Master The Skills You <br /> <span className="text-gradient">Actually Need</span>
           </h1>
           <p className={styles.subtitle}>
-            Upload your syllabus, uncover market demands, and let AI build your custom roadmap to success. Learn by building and simulating real internships.
+            State-of-the-art AI generates your engineering roadmap, tests your knowledge in the Tribunal, and rapidly upskills you through virtual internship simulations.
           </p>
           <div className={styles.heroActions}>
             <Link href="/login" className="btn-primary">
-              Build Your Roadmap <ArrowRight size={18} />
+              Enter The Forge <ArrowRight size={18} />
             </Link>
-            <Link href="/trends" className="btn-glass">
-              <TrendingUp size={18} /> View Live Trends
+            <Link href="/login" className="btn-glass">
+              <Rocket size={18} /> View Dashboard
             </Link>
           </div>
         </div>
 
         {/* Feature Cards Showcase */}
-        <div className={styles.features} style={{ animationDelay: '0.3s' }}>
+        <div className={styles.features} style={{ animationDelay: '0.3s', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
+          <div className="glass-panel" style={{ padding: '2rem' }}>
+            <BrainCircuit size={32} color="#58a6ff" style={{ marginBottom: '1rem' }} />
+            <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>Dynamic Syllabus</h3>
+            <p style={{ color: 'var(--text-secondary)' }}>AI analyzes your ambition and builds a phase-by-phase chronological roadmap to mastery.</p>
+          </div>
+          <div className="glass-panel" style={{ padding: '2rem' }}>
+            <ShieldAlert size={32} color="#da3633" style={{ marginBottom: '1rem' }} />
+            <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>The AI Tribunal</h3>
+            <p style={{ color: 'var(--text-secondary)' }}>Prove your skills against rigorous AI examinations probing your current knowledge and missing prerequisites.</p>
+          </div>
           <div className="glass-panel" style={{ padding: '2rem' }}>
             <Briefcase size={32} color="#8b5cf6" style={{ marginBottom: '1rem' }} />
             <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>Virtual Internships</h3>
-            <p style={{ color: 'var(--text-secondary)' }}>Gain real experience through AI-simulated workplace environments.</p>
-          </div>
-          <div className="glass-panel" style={{ padding: '2rem' }}>
-            <TrendingUp size={32} color="#3b82f6" style={{ marginBottom: '1rem' }} />
-            <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem' }}>Market Reality Check</h3>
-            <p style={{ color: 'var(--text-secondary)' }}>Identify gaps in your curriculum against true industry needs.</p>
+            <p style={{ color: 'var(--text-secondary)' }}>Gain real experience through AI-simulated agile workplace sprints and ticket assignments.</p>
           </div>
         </div>
       </section>

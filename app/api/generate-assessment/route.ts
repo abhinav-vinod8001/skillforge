@@ -16,64 +16,62 @@ export async function POST(req: Request) {
 
     try {
         const body = await req.json();
-        const skills = body.skills || [];
-        const userSkills = Array.isArray(skills) && skills.length > 0 ? skills.join(', ') : 'Computer Science, Mathematics, Programming';
+        const { current_knowledge, missing_prerequisites } = body;
+
+        const currentStr = Array.isArray(current_knowledge) && current_knowledge.length > 0 ? current_knowledge.join(', ') : 'Basic Programming and Logic';
+        const prereqStr = Array.isArray(missing_prerequisites) && missing_prerequisites.length > 0 ? missing_prerequisites.join(', ') : 'Advanced Computer Science Concepts';
 
         const prompt = `You are a strict, elite academic examiner designing an inescapable "Skill Scanner" screening test.
-The candidate claims to have these skills: ${userSkills}
 
-Pick ONE advanced, theoretical prerequisite concept from their skills (e.g., the math behind neural networks, time complexity of graph algorithms, the consensus mechanism of blockchains, or the fundamental theory behind React's Virtual DOM).
-Generate a tough Multiple Choice Question (MCQ) with 4 options. The question must test the deep underlying theory or math, NOT superficial syntax.
+Generate exactly TWO advanced theoretical Multiple Choice Questions (MCQs) mapped directly to the user's intelligence profile.
 
-OUTPUT FORMAT: Wrap your response in exactly these XML tags. Do NOT use markdown outside the tags.
+QUESTION 1:
+Must test an advanced, theoretical concept bounding their CURRENT KNOWLEDGE: ${currentStr}
 
-<concept>The core theory being tested</concept>
-<question>The tough theoretical question</question>
-<option0>First possible answer</option0>
-<option1>Second possible answer</option1>
-<option2>Third possible answer</option2>
-<option3>Fourth possible answer</option3>
-<correct_index>0, 1, 2, or 3</correct_index>
-<explanation>A 2-sentence strict academic explanation of why the correct answer is right and the others are wrong.</explanation>`;
+QUESTION 2:
+Must test an advanced, theoretical concept bounding the MISSING PREREQUISITES for what they want to learn next: ${prereqStr}
+
+Both questions MUST test deep underlying theory or math, NOT superficial syntax.
+
+Return ONLY a valid JSON object matching this EXACT format:
+{
+  "questions": [
+    {
+        "concept": "The core theory being tested",
+        "question": "The tough theoretical question for Question 1",
+        "options": ["Option A", "Option B", "Option C", "Option D"],
+        "correctIndex": 0,
+        "explanation": "A 2-sentence strict academic explanation."
+    },
+    {
+        "concept": "The core theory being tested",
+        "question": "The tough theoretical question for Question 2",
+        "options": ["Option A", "Option B", "Option C", "Option D"],
+        "correctIndex": 2,
+        "explanation": "A 2-sentence strict academic explanation."
+    }
+  ]
+}
+`;
 
         const completion = await groq.chat.completions.create({
             messages: [
-                { role: 'system', content: 'You are an elite academic examiner testing fundamental theory. You output only strict XML format.' },
+                { role: 'system', content: 'You are an elite academic examiner testing fundamental theory. You output only strict JSON format.' },
                 { role: 'user', content: prompt }
             ],
-            model: 'llama-3.1-8b-instant',
+            model: 'llama-3.3-70b-versatile',
+            response_format: { type: 'json_object' },
             temperature: 0.7,
         });
 
-        const output = completion.choices[0]?.message?.content || '';
+        const output = completion.choices[0]?.message?.content || '{"questions": []}';
+        const parsed = JSON.parse(output);
 
-        const extract = (tag: string) => {
-            const match = output.match(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`, 'i'));
-            return match ? match[1].trim() : '';
-        };
+        if (!parsed.questions || !Array.isArray(parsed.questions) || parsed.questions.length < 2) {
+            throw new Error("AI failed to generate exactly 2 questions sequence.");
+        }
 
-        const concept = extract('concept') || 'Fundamental Theory';
-        const question = extract('question') || 'What is the foundational underlying mechanism?';
-        const options = [
-            extract('option0') || 'Option A',
-            extract('option1') || 'Option B',
-            extract('option2') || 'Option C',
-            extract('option3') || 'Option D'
-        ];
-        // Ensure correct index is parsed as an integer between 0 and 3
-        const correctIndexMatch = extract('correct_index');
-        const correctIndex = correctIndexMatch ? parseInt(correctIndexMatch, 10) : 0;
-        const validCorrectIndex = isNaN(correctIndex) ? 0 : Math.max(0, Math.min(3, correctIndex));
-
-        const explanation = extract('explanation') || 'The chosen option correctly addresses the principal theory.';
-
-        return NextResponse.json({
-            concept,
-            question,
-            options,
-            correctIndex: validCorrectIndex,
-            explanation
-        });
+        return NextResponse.json(parsed.questions.slice(0, 2));
 
     } catch (error: unknown) {
         console.error('Assessment Generation Error:', error);

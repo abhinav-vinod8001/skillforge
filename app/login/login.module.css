@@ -7,15 +7,21 @@
     background: var(--bg-color);
 }
 
-.loginCard {
+.authWrapper {
     width: 100%;
-    max-width: 400px;
-    background: var(--panel-bg);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-lg);
-    padding: 2rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    max-width: 440px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     animation: fadeIn 0.4s ease-out;
+}
+
+.clerkContainer {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
 }
 
 .header {
@@ -40,22 +46,24 @@
     font-size: 0.875rem;
 }
 
-.form {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+.switchRow {
+    text-align: center;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
 }
 
-.inputGroup {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
+.switchBtn {
+    background: none;
+    border: none;
+    color: var(--accent-secondary);
+    cursor: pointer;
+    font-weight: 600;
+    margin-left: 0.5rem;
 }
 
-.inputGroup label {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--text-primary);
+.switchBtn:hover {
+    text-decoration: underline;
 }
 
 .inputGroup input {

@@ -197,3 +197,90 @@
         flex-direction: column;
     }
 }
+
+/* ─── Chapter Markdown Styles ───────────────────────────────────────────── */
+
+.markdownWrapper {
+    color: var(--text-primary);
+    line-height: 1.7;
+    font-size: 0.95rem;
+}
+
+.markdownWrapper h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: var(--accent-purple);
+    letter-spacing: -0.02em;
+}
+
+.markdownWrapper h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.markdownWrapper h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.markdownWrapper p {
+    margin-bottom: 1.25rem;
+    color: var(--text-secondary);
+}
+
+.markdownWrapper ul,
+.markdownWrapper ol {
+    margin-bottom: 1.5rem;
+    padding-left: 1.5rem;
+    color: var(--text-secondary);
+}
+
+.markdownWrapper li {
+    margin-bottom: 0.5rem;
+}
+
+.markdownWrapper pre {
+    background: rgba(10, 10, 12, 0.8);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    overflow-x: auto;
+    margin: 1.5rem 0;
+}
+
+.markdownWrapper code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: #58a6ff;
+}
+
+.markdownWrapper pre code {
+    color: inherit;
+    background: none;
+    padding: 0;
+}
+
+.markdownWrapper p code,
+.markdownWrapper li code {
+    background: rgba(177, 186, 196, 0.1);
+    padding: 0.15rem 0.35rem;
+    border-radius: 4px;
+    font-size: 0.85em;
+    color: #ff7b72;
+}
+
+.markdownWrapper blockquote {
+    border-left: 3px solid var(--accent-purple);
+    padding-left: 1rem;
+    margin-left: 0;
+    margin-bottom: 1.5rem;
+    color: var(--text-secondary);
+    font-style: italic;
+}

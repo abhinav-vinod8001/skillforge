@@ -174,7 +174,14 @@ export default function ChaosEscapeRoomPage() {
                         <Code2 size={16} className="text-gradient" /> vulnerable_file.tx
                     </div>
                 </div>
-                <div className={styles.editorWrapper}>
+                <div
+                    className={styles.editorWrapper}
+                    onPasteCapture={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        alert('⛔ Cheat Prevention: Copy-pasting is strictly disabled in the Forge. You must synthesize this solution manually.');
+                    }}
+                >
                     <Editor
                         height="100%"
                         defaultLanguage="typescript"

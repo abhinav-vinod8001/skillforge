@@ -101,6 +101,73 @@ export async function deleteRoadmap(): Promise<void> {
     } catch (e) { console.warn('Convex deleteRoadmap failed:', e); }
 }
 
+// ─── SYLLABUS ───────────────────────────────────────────────────────────
+
+export async function saveSyllabus(syllabus: Record<string, unknown>): Promise<void> {
+    localStorage.setItem('skillforge_syllabus', JSON.stringify(syllabus));
+    const client = getClient();
+    const userId = getUserId();
+    if (!client || !userId) return;
+    try {
+        await client.mutation(api.functions.saveSyllabus, {
+            userId, syllabusData: JSON.stringify(syllabus),
+        });
+    } catch (e) { console.warn('Convex saveSyllabus failed:', e); }
+}
+
+export async function getSyllabus(): Promise<Record<string, unknown> | null> {
+    const client = getClient();
+    const userId = getUserId();
+    if (client && userId) {
+        try {
+            const doc = await client.query(api.functions.getSyllabus, { userId });
+            if (doc) {
+                const syllabus = JSON.parse(doc.syllabusData);
+                localStorage.setItem('skillforge_syllabus', JSON.stringify(syllabus));
+                return syllabus;
+            }
+        } catch (e) { console.warn('Convex getSyllabus failed:', e); }
+    }
+    try {
+        const saved = localStorage.getItem('skillforge_syllabus');
+        if (saved) return JSON.parse(saved);
+    } catch { /* ignore */ }
+    return null;
+}
+
+// ─── CHAPTERS ───────────────────────────────────────────────────────────
+
+export async function saveChapter(phase: number, content: string): Promise<void> {
+    localStorage.setItem(`skillforge_chapter_${phase}`, content);
+    const client = getClient();
+    const userId = getUserId();
+    if (!client || !userId) return;
+    try {
+        await client.mutation(api.functions.saveChapter, {
+            userId, phase, content,
+        });
+    } catch (e) { console.warn('Convex saveChapter failed:', e); }
+}
+
+export async function getChapter(phase: number): Promise<string | null> {
+    const client = getClient();
+    const userId = getUserId();
+    if (client && userId) {
+        try {
+            const doc = await client.query(api.functions.getChapter, { userId, phase });
+            if (doc) {
+                localStorage.setItem(`skillforge_chapter_${phase}`, doc.content);
+                return doc.content;
+            }
+        } catch (e) { console.warn('Convex getChapter failed:', e); }
+    }
+    try {
+        const saved = localStorage.getItem(`skillforge_chapter_${phase}`);
+        if (saved) return saved;
+    } catch { /* ignore */ }
+    return null;
+}
+
 // ─── PROGRESS ───────────────────────────────────────────────────────────
 
 export async function saveProgress(forgeLevel: number, promptProgress: Record<string, unknown>): Promise<void> {
@@ -117,7 +184,8 @@ export async function saveProgress(forgeLevel: number, promptProgress: Record<st
     syncLeaderboard();
 }
 
-export async function getProgress(): Promise<{ forgeLevel: number; promptProgress: Record<string, unknown> }> {
+export async function getProgress(): Promise<{ forgeLevel: number; promptProgress: Record<string, unknown>; completedModules: number[] }> {
+    const defaultData = { forgeLevel: 1, promptProgress: {}, completedModules: [] };
     const client = getClient();
     const userId = getUserId();
     if (client && userId) {
@@ -127,20 +195,34 @@ export async function getProgress(): Promise<{ forgeLevel: number; promptProgres
                 const result = {
                     forgeLevel: doc.forgeLevel,
                     promptProgress: JSON.parse(doc.promptProgress),
+                    completedModules: doc.completedModules ? JSON.parse(doc.completedModules) : []
                 };
                 localStorage.setItem('skillforge_forge_level', result.forgeLevel.toString());
                 localStorage.setItem('skillforge_prompt_progress', JSON.stringify(result.promptProgress));
+                localStorage.setItem('skillforge_completed_modules', JSON.stringify(result.completedModules));
                 return result;
             }
         } catch (e) { console.warn('Convex getProgress failed:', e); }
     }
     const forgeLevel = parseInt(localStorage.getItem('skillforge_forge_level') || '0', 10);
     let promptProgress: Record<string, unknown> = {};
+    let completedModules: number[] = [];
     try {
         const saved = localStorage.getItem('skillforge_prompt_progress');
         if (saved) promptProgress = JSON.parse(saved);
+        const savedMods = localStorage.getItem('skillforge_completed_modules');
+        if (savedMods) completedModules = JSON.parse(savedMods);
     } catch { /* ignore */ }
-    return { forgeLevel, promptProgress };
+    return { forgeLevel, promptProgress, completedModules };
+}
+
+export async function markModuleComplete(phase: number): Promise<void> {
+    const client = getClient();
+    const userId = getUserId();
+    if (!client || !userId) return;
+    try {
+        await client.mutation(api.functions.markModuleComplete, { userId, phase });
+    } catch (e) { console.warn('Convex markModuleComplete failed:', e); }
 }
 
 export async function saveForgeLevel(level: number): Promise<void> {
@@ -329,6 +411,33 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
     } catch (e) {
         console.warn('Convex getLeaderboard failed:', e);
         return [];
+    }
+}
+
+// ─── ACCOUNT RESET ────────────────────────────────────────────────────────
+
+export async function resetAccount(): Promise<void> {
+    const client = getClient();
+    const userId = getUserId();
+
+    // Clear local storage metrics
+    const keysToRemove = [
+        'skillforge_skills',
+        'skillforge_roadmap',
+        'skillforge_syllabus',
+        'skillforge_forge_level',
+        'skillforge_prompt_progress',
+        'skillforge_prompt_badges',
+        'skillforge_simulator_log',
+        'praxis_user'
+    ];
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+
+    if (!client || !userId) return;
+    try {
+        await client.mutation(api.functions.resetUserAccount, { userId });
+    } catch (e) {
+        console.warn('Convex resetUserAccount failed:', e);
     }
 }
 

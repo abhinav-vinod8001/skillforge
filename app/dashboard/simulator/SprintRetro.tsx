@@ -9,7 +9,19 @@ interface SprintRetroProps {
     baseMetrics: Record<string, number | string> | null;
     standupScore: number;
     ticketsCompleted: number;
-    onComplete: (finalMetrics: Record<string, number | string>) => void;
+    onComplete: (finalMetrics: RetroMetrics) => void;
+}
+
+interface RetroParsed {
+    feedback?: string;
+    self_awareness?: number | string;
+    growth_mindset?: number | string;
+    specificity?: number | string;
+}
+
+interface RetroMetrics {
+    score: number;
+    [key: string]: string | number | undefined;
 }
 
 export default function SprintRetro({ baseMetrics, standupScore, ticketsCompleted, onComplete }: SprintRetroProps) {
@@ -17,7 +29,7 @@ export default function SprintRetro({ baseMetrics, standupScore, ticketsComplete
     const [challenging, setChallenging] = useState('');
     const [doDifferently, setDoDifferently] = useState('');
     const [loading, setLoading] = useState(false);
-    const [retroResult, setRetroResult] = useState<{ parsed: any, finalMetrics: any } | null>(null);
+    const [retroResult, setRetroResult] = useState<{ parsed: RetroParsed, finalMetrics: RetroMetrics } | null>(null);
 
     const handleSubmit = async () => {
         if (!wentWell.trim() || !challenging.trim() || !doDifferently.trim()) return;
@@ -25,6 +37,22 @@ export default function SprintRetro({ baseMetrics, standupScore, ticketsComplete
 
         try {
             const retroText = `What went well: ${wentWell}\nWhat was challenging: ${challenging}\nWhat I would do differently: ${doDifferently}`;
+
+            // ─── CHEAT ENGINE INTERCEPTION ───────────────────────── //
+            const cheatRes = await fetch('/api/detect-cheat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: retroText })
+            });
+            const cheatData = await cheatRes.json();
+
+            if (cheatData.isCheat) {
+                alert(`🚨 CHEAT DETECTED by AI Tribunal 🚨\n\nYour reflection appears to be AI-generated.\nReason: ${cheatData.reason}\n\nTo pass the internship, you must write an authentic human reflection.`);
+                setLoading(false);
+                return;
+            }
+            // ──────────────────────────────────────────────────────── //
+
             const res = await fetch('/api/simulator', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -37,11 +65,16 @@ export default function SprintRetro({ baseMetrics, standupScore, ticketsComplete
             let parsed: { total?: number; self_awareness?: number; growth_mindset?: number; specificity?: number; feedback?: string } = { self_awareness: 7, growth_mindset: 7, specificity: 7, total: 21, feedback: 'Good retrospective.' };
             try { parsed = JSON.parse(data.content); } catch { }
 
-            // Calculate combined final score
+            // Calculate combined final score mathematically capped at 100
             const technicalScore = (baseMetrics?.score as number) || 70;
             const retroScore = parsed.total || 21;
+
+            // Weights: Tech (40%), Retro (20%), Standup (20%), Tickets (20% max)
             const combinedScore = Math.round(
-                (technicalScore * 0.5) + (retroScore * 1.0) + (standupScore * 0.3) + (ticketsCompleted * 3)
+                (technicalScore * 0.4) +
+                ((retroScore / 30) * 20) +
+                ((standupScore / 30) * 20) +
+                Math.min(ticketsCompleted * 5, 20)
             );
 
             const finalMetrics = {
@@ -72,22 +105,34 @@ export default function SprintRetro({ baseMetrics, standupScore, ticketsComplete
 
     if (retroResult) {
         const { parsed, finalMetrics } = retroResult;
+        const finalScore = finalMetrics.score as number;
+        const isPass = finalScore >= 70;
+
         return (
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className={`glass-panel ${styles.retroResult}`}
+                style={{ border: isPass ? '1px solid rgba(63, 185, 80, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)' }}
             >
-                <Trophy size={48} className="text-gradient" style={{ margin: '0 auto 1.5rem', display: 'block' }} />
-                <h2>Sprint Complete</h2>
+                {isPass ?
+                    <Trophy size={48} style={{ color: '#3fb950', margin: '0 auto 1.5rem', display: 'block' }} /> :
+                    <div style={{ fontSize: '3rem', textAlign: 'center', marginBottom: '1.5rem', color: '#ef4444' }}>⚠️</div>
+                }
+
+                <h2 style={{ color: isPass ? '#3fb950' : '#ef4444' }}>
+                    {isPass ? 'Sprint Passed!' : 'Sprint Failed'}
+                </h2>
                 <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
-                    {parsed.feedback || 'Good work!'}
+                    {isPass
+                        ? (parsed.feedback || 'Excellent work. You passed the 70 point threshold.')
+                        : "You scored below the 70 point threshold. You must retake the internship to earn organizational certification."}
                 </p>
 
                 <div className={styles.retroScoreGrid}>
                     <div className={styles.retroScoreItem}>
                         <span>Final Score</span>
-                        <strong className="text-gradient">{finalMetrics.score}/100</strong>
+                        <strong style={{ color: isPass ? '#3fb950' : '#ef4444' }}>{finalScore}/100</strong>
                     </div>
                     <div className={styles.retroScoreItem}>
                         <span>Standup</span>
@@ -114,9 +159,15 @@ export default function SprintRetro({ baseMetrics, standupScore, ticketsComplete
                 <button
                     className="btn-primary"
                     onClick={() => onComplete(finalMetrics)}
-                    style={{ width: '100%', marginTop: '2rem' }}
+                    style={{
+                        width: '100%',
+                        marginTop: '2rem',
+                        background: isPass ? '' : 'var(--panel-bg)',
+                        border: isPass ? '' : '1px solid var(--border-color)',
+                        color: isPass ? '' : 'var(--text-primary)'
+                    }}
                 >
-                    Export Certification
+                    {isPass ? 'Finalize Internship & Return to Dashboard' : 'Finalize Score & Return (Retake Required)'}
                 </button>
             </motion.div>
         );

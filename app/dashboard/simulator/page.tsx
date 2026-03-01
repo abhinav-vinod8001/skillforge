@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Clock, Flag, Briefcase } from 'lucide-react';
-import { saveSimulatorLog, getUserSkills } from '@/utils/convex/db';
+import { saveSimulatorLog, getSyllabus } from '@/utils/convex/db';
 import styles from './simulator.module.css';
 import StandupModal from './StandupModal';
 import TicketBoard, { Ticket } from './TicketBoard';
@@ -82,9 +82,6 @@ export default function SimulatorPage() {
     // Tickets
     const [tickets, setTickets] = useState<Ticket[]>(DEFAULT_TICKETS);
 
-    // User skills for personalization
-    const [userSkillFocus, setUserSkillFocus] = useState('Full Stack Development');
-
     // Messages per channel
     const [channelMessages, setChannelMessages] = useState<Record<Channel, Message[]>>({
         dm: [{ role: 'assistant', content: 'Good morning! I\'m Alex, your Engineering Manager. I\'ve added 3 tickets to your Sprint Board.\n\nTICKET-001 (P1 Bug): Fix login redirect — this is urgent. TICKET-002 (P2 Feature): Dark mode toggle. TICKET-003 (P2 Docs): API documentation.\n\nStart with the P1. Drag it to "In Progress" on your board when you begin. Let me know when you need help.' }],
@@ -105,14 +102,14 @@ export default function SimulatorPage() {
 
     const router = useRouter();
 
-    // Load user skills and personalize tickets
+    // Load user syllabus and personalize tickets
     useEffect(() => {
-        const loadSkills = async () => {
+        const loadSyllabus = async () => {
             try {
-                const skills = await getUserSkills();
+                const syllabus = await getSyllabus() as Record<string, unknown> | null;
+                const skills = (syllabus?.skills as string[]) || [];
                 if (skills.length > 0) {
                     const skillStr = skills.join(', ');
-                    setUserSkillFocus(skillStr);
 
                     // Generate personalized tickets based on user skills
                     const personalizedTickets = generatePersonalizedTickets(skills);
@@ -124,9 +121,11 @@ export default function SimulatorPage() {
                         dm: [{ role: 'assistant', content: `Good morning! I'm Alex, your Engineering Manager. Based on your ${skillStr} background, I've curated 3 tickets for your Sprint Board.\n\n${personalizedTickets.map((t: Ticket) => `${t.id} (${t.priority} ${t.type[0].toUpperCase() + t.type.slice(1)}): ${t.title}`).join('. ')}\n\nStart with the P1. Drag it to "In Progress" on your board when you begin. Let me know when you need help.` }],
                     }));
                 }
-            } catch { }
+            } catch (error) {
+                console.error("Failed to load syllabus:", error);
+            }
         };
-        loadSkills();
+        loadSyllabus();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -188,14 +187,16 @@ export default function SimulatorPage() {
             const apiMessages = isAutoIncident
                 ? [{ role: 'user', content: 'Generate a realistic P0 production incident alert NOW.' }]
                 : [...channelMessages[channel], { role: 'user', content: text }].filter(m => m.role !== 'system');
+            const syllabus = await getSyllabus();
+            const syllabusData = syllabus ? JSON.stringify(syllabus).substring(0, 1000) : 'General Engineering'; // Limit size slightly to fit in prompt
 
             const res = await fetch('/api/simulator', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     messages: apiMessages,
-                    channel,
-                    skill_focus: userSkillFocus,
+                    syllabus: syllabusData,
+                    channel: channel,
                 }),
             });
 

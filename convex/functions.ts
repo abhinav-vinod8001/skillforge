@@ -68,6 +68,64 @@ export const deleteRoadmap = mutation({
     },
 });
 
+// ─── SYLLABUSES ───────────────────────────────────────────────────────────
+
+export const getSyllabus = query({
+    args: { userId: v.string() },
+    handler: async (ctx, args) => {
+        return await ctx.db
+            .query("user_syllabuses")
+            .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+            .first();
+    },
+});
+
+export const saveSyllabus = mutation({
+    args: { userId: v.string(), syllabusData: v.string() },
+    handler: async (ctx, args) => {
+        const existing = await ctx.db
+            .query("user_syllabuses")
+            .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+            .first();
+        if (existing) {
+            await ctx.db.patch(existing._id, { syllabusData: args.syllabusData });
+        } else {
+            await ctx.db.insert("user_syllabuses", args);
+        }
+    },
+});
+
+// ─── CHAPTERS ─────────────────────────────────────────────────────────────
+
+export const getChapter = query({
+    args: { userId: v.string(), phase: v.number() },
+    handler: async (ctx, args) => {
+        return await ctx.db
+            .query("user_chapters")
+            .withIndex("by_userId_phase", (q) =>
+                q.eq("userId", args.userId).eq("phase", args.phase)
+            )
+            .first();
+    },
+});
+
+export const saveChapter = mutation({
+    args: { userId: v.string(), phase: v.number(), content: v.string() },
+    handler: async (ctx, args) => {
+        const existing = await ctx.db
+            .query("user_chapters")
+            .withIndex("by_userId_phase", (q) =>
+                q.eq("userId", args.userId).eq("phase", args.phase)
+            )
+            .first();
+        if (existing) {
+            await ctx.db.patch(existing._id, { content: args.content });
+        } else {
+            await ctx.db.insert("user_chapters", args);
+        }
+    },
+});
+
 // ─── PROGRESS ───────────────────────────────────────────────────────────
 
 export const getProgress = query({
@@ -96,6 +154,34 @@ export const saveProgress = mutation({
             await ctx.db.insert("user_progress", args);
         }
     },
+});
+
+export const markModuleComplete = mutation({
+    args: { userId: v.string(), phase: v.number() },
+    handler: async (ctx, args) => {
+        const existing = await ctx.db
+            .query("user_progress")
+            .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+            .first();
+
+        if (existing) {
+            let mods: number[] = [];
+            if (existing.completedModules) {
+                mods = JSON.parse(existing.completedModules);
+            }
+            if (!mods.includes(args.phase)) {
+                mods.push(args.phase);
+            }
+            await ctx.db.patch(existing._id, { completedModules: JSON.stringify(mods) });
+        } else {
+            await ctx.db.insert("user_progress", {
+                userId: args.userId,
+                forgeLevel: 1,
+                promptProgress: "{}",
+                completedModules: JSON.stringify([args.phase])
+            });
+        }
+    }
 });
 
 // ─── BADGES ─────────────────────────────────────────────────────────────
@@ -189,6 +275,42 @@ export const getAllLeaderboardScores = query({
     args: {},
     handler: async (ctx) => {
         return await ctx.db.query("leaderboard_scores").collect();
+    },
+});
+
+// ─── ACCOUNT RESET ────────────────────────────────────────────────────────
+
+export const resetUserAccount = mutation({
+    args: { userId: v.string() },
+    handler: async (ctx, args) => {
+        const tables = [
+            "user_skills",
+            "user_roadmaps",
+            "user_syllabuses",
+            "user_progress",
+            "user_badges",
+            "simulator_logs",
+            "leaderboard_scores"
+        ] as const;
+
+        for (const table of tables) {
+            const records = await ctx.db
+                .query(table)
+                .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+                .collect();
+
+            for (const record of records) {
+                await ctx.db.delete(record._id);
+            }
+        }
+
+        const chapters = await ctx.db
+            .query("user_chapters")
+            .withIndex("by_userId_phase", (q) => q.eq("userId", args.userId))
+            .collect();
+        for (const chap of chapters) {
+            await ctx.db.delete(chap._id);
+        }
     },
 });
 

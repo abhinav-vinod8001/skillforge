@@ -82,7 +82,7 @@ Respond ONLY with valid JSON:
 
 export async function POST(request: Request) {
     try {
-        const { messages, skill_focus, channel = 'dm', type } = await request.json();
+        const { messages, syllabus, channel = 'dm', type } = await request.json();
 
         if (!messages) {
             return NextResponse.json({ error: 'Messages are required' }, { status: 400 });
@@ -92,8 +92,8 @@ export async function POST(request: Request) {
         let systemPrompt = CHANNEL_PROMPTS[type || channel] || CHANNEL_PROMPTS.dm;
 
         // Inject the skill focus into the DM prompt
-        if ((channel === 'dm' && !type) && skill_focus) {
-            systemPrompt = systemPrompt.replace('a top tech company', `a top tech company, specializing in ${skill_focus}`);
+        if ((channel === 'dm' && !type) && syllabus) {
+            systemPrompt = systemPrompt.replace('a top tech company', `a top tech company. Evaluate the user strictly against this Training Syllabus: ${syllabus}. Base the tickets directly on their syllabus nodes!`);
         }
 
         const groqMessages = [

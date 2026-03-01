@@ -34,6 +34,21 @@ export default function TribunalReviewModal({ code, originalCode, missions, onCl
     const runTribunal = async () => {
         setLoading(true);
         try {
+            // STEP 1: Execute rigorous Anti-Cheat validation
+            const cheatRes = await fetch('/api/detect-cheat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: code })
+            });
+            const cheatData = await cheatRes.json();
+
+            if (cheatData.isCheat) {
+                alert(`⛔ CHEAT DETECTED: ${cheatData.reason}\n\nThe Multi-Agent Tribunal has rejected your submission entirely. You must write your own authentic code.`);
+                onClose();
+                return;
+            }
+
+            // STEP 2: Main Tribunal Review Phase
             const res = await fetch('/api/tribunal-review', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

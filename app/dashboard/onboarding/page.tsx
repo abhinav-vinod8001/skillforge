@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { UploadCloud, Rocket, Loader2, CheckCircle2, Target, Code, Brain } from 'lucide-react';
 import * as pdfjsLibTypes from 'pdfjs-dist';
-import { saveSkills } from '@/utils/convex/db';
+import { saveSkills, saveSyllabus } from '@/utils/convex/db';
 import styles from './onboarding.module.css';
 
 // Use a type string or any for pdfjsLib since it will be loaded dynamically
@@ -72,8 +72,8 @@ export default function OnboardingPage() {
                 throw new Error("Please tell us your ambition, target skills, or upload a syllabus to proceed.");
             }
 
-            // Call our API to extract skills via Groq
-            const res = await fetch('/api/analyze-syllabus', {
+            // Call our new API to generate a strict Syllabus via Groq
+            const res = await fetch('/api/generate-syllabus', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ text: combinedInput.substring(0, 15000) }) // limit size
@@ -81,13 +81,14 @@ export default function OnboardingPage() {
 
             if (!res.ok) {
                 const errData = await res.json().catch(() => ({}));
-                throw new Error(errData.error || "Failed to analyze profile");
+                throw new Error(errData.error || "Failed to analyze profile and generate syllabus");
             }
 
             const data = await res.json();
 
             // Save to Convex/localStorage
-            await saveSkills(data.skills);
+            if (data.skills) await saveSkills(data.skills);
+            await saveSyllabus(data);
 
             setResult(data);
         } catch (err: unknown) {
@@ -103,7 +104,7 @@ export default function OnboardingPage() {
                 <div className="glass-panel" style={{ padding: '4rem 2rem', textAlign: 'center' }}>
                     <CheckCircle2 size={72} className="text-gradient" style={{ margin: '0 auto 1.5rem', display: 'block' }} />
                     <h1 className={styles.title} style={{ fontSize: '2.5rem' }}>Profile Analyzed</h1>
-                    <p className={styles.subtitle}>We've extracted the exact prerequisites required for your ambition.</p>
+                    <p className={styles.subtitle}>We&apos;ve extracted the exact prerequisites required for your ambition.</p>
 
                     <div className={styles.skillsGrid}>
                         {Array.isArray(result.skills) && result.skills.length > 0 ? (
@@ -119,7 +120,7 @@ export default function OnboardingPage() {
                         Advance to Skill Scanner <Rocket size={20} style={{ marginLeft: '0.5rem' }} />
                     </button>
                     <p style={{ marginTop: '1rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                        You must pass the Tribunal's prerequisite theoretical test to proceed.
+                        You must pass the Tribunal&apos;s prerequisite theoretical test to proceed.
                     </p>
                 </div>
             </div>
@@ -130,7 +131,7 @@ export default function OnboardingPage() {
         <div className={`animate-fade-in ${styles.container}`}>
             <div className={styles.header}>
                 <h1 className={styles.title}>Get Started</h1>
-                <p className={styles.subtitle}>Tell us your grand ambition. We will dynamically adapt the entire platform's curriculum and incident simulations to match your trajectory.</p>
+                <p className={styles.subtitle}>Tell us your grand ambition. We will dynamically adapt the entire platform&apos;s curriculum and incident simulations to match your trajectory.</p>
             </div>
 
             <form onSubmit={handleSubmit} className={styles.formContent}>

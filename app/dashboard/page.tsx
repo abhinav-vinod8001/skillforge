@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { getProgress, getBadges } from '@/utils/convex/db';
+import { getProgress, getBadges, getSimulatorLog } from '@/utils/convex/db';
 import {
     UploadCloud,
     TrendingUp,
@@ -20,27 +20,11 @@ import styles from './home.module.css';
 
 const FEATURES = [
     {
-        label: 'Onboarding',
-        href: '/dashboard/onboarding',
-        icon: UploadCloud,
-        color: '#3fb950',
-        bgColor: 'rgba(63, 185, 80, 0.1)',
-        description: 'Upload your curriculum or syllabus to uncover skill gaps against real market demand.',
-    },
-    {
-        label: 'Market Trends',
-        href: '/dashboard/trends',
-        icon: TrendingUp,
-        color: '#58a6ff',
-        bgColor: 'rgba(88, 166, 255, 0.1)',
-        description: 'Live industry demand analysis scraped from job boards and tech news.',
-    },
-    {
         label: 'My Roadmap',
         href: '/dashboard/roadmap',
         icon: Map,
         color: '#d2a8ff',
-        bgColor: 'rgba(210, 168, 255, 0.1)',
+        bgColor: 'rgba(210, 168, 255, 0.14)',
         description: 'AI-generated personalized learning path bridging your skills to industry needs.',
     },
     {
@@ -48,7 +32,7 @@ const FEATURES = [
         href: '/dashboard/project',
         icon: FolderGit2,
         color: '#f0883e',
-        bgColor: 'rgba(240, 136, 62, 0.1)',
+        bgColor: 'rgba(240, 136, 62, 0.14)',
         description: 'Find and fix real security flaws, refactor code, and pass the AI tribunal review.',
     },
     {
@@ -56,7 +40,7 @@ const FEATURES = [
         href: '/dashboard/prompt-engineering',
         icon: TerminalSquare,
         color: '#56d364',
-        bgColor: 'rgba(86, 211, 100, 0.1)',
+        bgColor: 'rgba(86, 211, 100, 0.14)',
         description: 'Master prompt engineering through scenario-based challenges and compete on the leaderboard.',
     },
     {
@@ -64,8 +48,8 @@ const FEATURES = [
         href: '/dashboard/simulator',
         icon: Briefcase,
         color: '#79c0ff',
-        bgColor: 'rgba(121, 192, 255, 0.1)',
-        description: 'Experience a full day as a software engineering intern with standups, tickets, and retros.',
+        bgColor: 'rgba(121, 192, 255, 0.14)',
+        description: 'Experience a full day as an engineer with agile standups, jira tickets, and retros.',
     },
 ];
 
@@ -93,7 +77,21 @@ export default function DashboardHome() {
                 setTotalPoints(pts + fl * 50);
 
                 const b = await getBadges();
-                setBadgeCount(b.length);
+                const badgeList = [...b];
+
+                if (fl >= 1 && !badgeList.includes('forge-starter')) badgeList.push('forge-starter');
+                if (fl >= 3 && !badgeList.includes('forge-veteran')) badgeList.push('forge-veteran');
+
+                const simLog = await getSimulatorLog();
+                if (simLog) {
+                    try {
+                        const logString = (simLog as Record<string, unknown>).logData as string;
+                        const parsedLog = JSON.parse(logString);
+                        if (parsedLog.score >= 70 && !badgeList.includes('certified')) badgeList.push('certified');
+                    } catch { }
+                }
+
+                setBadgeCount(badgeList.length);
             } catch {
                 // data unavailable
             }
@@ -105,11 +103,14 @@ export default function DashboardHome() {
         <div className={styles.homePage}>
             {/* Welcome */}
             <div className={styles.welcomeSection}>
-                <h1 className={styles.welcomeTitle}>
-                    Welcome to <span className="text-gradient">Praxis AI</span>
-                </h1>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                    <span style={{ color: 'var(--accent-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: '0.85rem' }}>Career Command Center</span>
+                    <h1 className={styles.welcomeTitle}>
+                        Welcome back to the <span className="text-gradient">Forge</span>
+                    </h1>
+                </div>
                 <p className={styles.welcomeSub}>
-                    Bridge the gap between theory and practice. Pick a module below to start learning by doing.
+                    Bridge the gap between theoretical knowledge and senior-level execution. Select an active module below.
                 </p>
             </div>
 

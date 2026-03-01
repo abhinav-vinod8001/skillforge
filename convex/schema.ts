@@ -12,10 +12,16 @@ export default defineSchema({
         roadmapData: v.string(), // JSON stringified roadmap
     }).index("by_userId", ["userId"]),
 
+    user_syllabuses: defineTable({
+        userId: v.string(),
+        syllabusData: v.string(), // JSON stringified syllabus
+    }).index("by_userId", ["userId"]),
+
     user_progress: defineTable({
         userId: v.string(),
         forgeLevel: v.number(),
         promptProgress: v.string(), // JSON stringified progress object
+        completedModules: v.optional(v.string()), // JSON stringified array of integers (phases)
     }).index("by_userId", ["userId"]),
 
     user_badges: defineTable({
@@ -37,4 +43,10 @@ export default defineSchema({
         forgeLevel: v.number(),
         topBadge: v.string(),
     }).index("by_userId", ["userId"]),
+
+    user_chapters: defineTable({
+        userId: v.string(),
+        phase: v.number(),
+        content: v.string(), // Markdown stringified content
+    }).index("by_userId_phase", ["userId", "phase"]),
 });
