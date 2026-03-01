@@ -18,8 +18,8 @@ import {
     AlertTriangle,
     CheckCircle2
 } from 'lucide-react';
-import { getProgress, getBadges, getSkills, getSimulatorLog, saveBadges, resetAccount } from '@/utils/convex/db';
-import { useRouter } from 'next/navigation';
+import { getProgress, getBadges, getSkills, getSimulatorLog, saveBadges, resetAccount, getSyllabus } from '@/utils/convex/db';
+import { useRouter, usePathname } from 'next/navigation';
 import styles from './profile.module.css';
 
 // ─── LEVEL SYSTEM ──────────────────────────────────────── //
@@ -72,6 +72,7 @@ export default function ProfilePage() {
     const [promptProgress, setPromptProgress] = useState<Record<string, { bestScore: number; attempts: number; completed: boolean }>>({});
     const [isResetting, setIsResetting] = useState(false);
     const router = useRouter();
+    const pathname = usePathname();
 
     const handleReset = async () => {
         if (!confirm("Are you sure you want to completely wipe your account progress? This cannot be undone.")) return;
@@ -179,8 +180,11 @@ export default function ProfilePage() {
                 // Fallback
             }
         };
-        loadProfile();
-    }, []);
+
+        if (pathname === '/dashboard/profile') {
+            loadProfile();
+        }
+    }, [pathname]);
 
     // Compute level
     const currentLevel = LEVELS.find(l => totalXP >= l.minXP && totalXP <= l.maxXP) || LEVELS[0];

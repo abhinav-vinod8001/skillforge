@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { getProgress, getBadges, getSimulatorLog } from '@/utils/convex/db';
 import {
@@ -54,6 +55,7 @@ const FEATURES = [
 ];
 
 export default function DashboardHome() {
+    const pathname = usePathname();
     const [forgeLevel, setForgeLevel] = useState(0);
     const [promptChallenges, setPromptChallenges] = useState(0);
     const [totalPoints, setTotalPoints] = useState(0);
@@ -96,8 +98,11 @@ export default function DashboardHome() {
                 // data unavailable
             }
         };
-        loadStats();
-    }, []);
+
+        if (pathname === '/dashboard') {
+            loadStats();
+        }
+    }, [pathname]);
 
     return (
         <div className={styles.homePage}>
