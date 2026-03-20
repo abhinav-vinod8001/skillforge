@@ -286,10 +286,10 @@ export default function SimulatorPage() {
         setIsActive(true);
     };
 
-    const handleRetroComplete = async (finalMetrics: Record<string, number | string>) => {
+    const handleRetroComplete = async (finalMetrics: Record<string, any>) => {
         await saveSimulatorLog({
             skill_focus: 'Full Stack Development',
-            score: finalMetrics.score || 0,
+            score: Number(finalMetrics.score) || 0,
             metrics: finalMetrics,
             completed_at: new Date().toISOString(),
         });

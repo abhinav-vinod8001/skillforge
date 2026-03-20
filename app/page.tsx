@@ -5,7 +5,7 @@ import styles from './page.module.css';
 export default function Home() {
   return (
     <main className={styles.main}>
-      {/* Navigation */}
+      {}
       <nav className={styles.nav}>
         <div className={styles.logo}>
           <Sparkles className={styles.logoIcon} />
@@ -17,7 +17,7 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* Hero Section */}
+      {}
       <section className={styles.hero}>
         <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
           <h1 className={styles.title}>
